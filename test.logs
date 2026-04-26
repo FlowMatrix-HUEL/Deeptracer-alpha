@@ -1,0 +1,167 @@
+2026-03-01 16:24:04,307 - ERROR - tools - 测试用例 test_flow_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 720, in _to_json
+    result_dict = json.loads(json1_str)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_workflow/test_workflow_flow.py", line 24, in test_flow_function
+    coze.setMessage()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 675, in setMessage
+    self._load_json(result=result)
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 695, in _load_json
+    result_dict = self._to_json(result)
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 722, in _to_json
+    raise ValueError(f"JSON 解析失败：{e}，原始内容：{result}") from e
+ValueError: JSON 解析失败：Expecting value: line 1 column 1 (char 0)，原始内容：
+2026-03-04 16:54:24,150 - ERROR - tools - 测试用例 test_main_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_astAnalyer/test_astAnalyer.py", line 20, in test_main_function
+    from deeptracer.astAnalyer import AstAnalyer
+  File "/home/ricaedo/Deeptracer/deeptracer/astAnalyer/__init__.py", line 1, in <module>
+    from .viztracer import (
+  File "/home/ricaedo/Deeptracer/deeptracer/astAnalyer/viztracer.py", line 7, in <module>
+    from astAnalyer import TYPES
+ModuleNotFoundError: No module named 'astAnalyer'
+2026-03-04 16:54:24,179 - ERROR - tools - 测试用例 test_main_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_astAnalyer/test_codeStructAnalyer.py", line 20, in test_main_function
+    from deeptracer.astAnalyer import CodeStructureAnalyzer
+  File "/home/ricaedo/Deeptracer/deeptracer/astAnalyer/__init__.py", line 1, in <module>
+    from .viztracer import (
+  File "/home/ricaedo/Deeptracer/deeptracer/astAnalyer/viztracer.py", line 7, in <module>
+    from astAnalyer import TYPES
+ModuleNotFoundError: No module named 'astAnalyer'
+2026-03-04 16:57:21,172 - ERROR - tools - 测试用例 test_main_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_astAnalyer/test_codeStructAnalyer.py", line 21, in test_main_function
+    memoryAnalyzer = CodeStructureAnalyzer(
+  File "/home/ricaedo/Deeptracer/deeptracer/astAnalyer/viztracer.py", line 279, in __init__
+    super().__init__(pythonScript=pythonScript,
+TypeError: AstAnalyer.__init__() got an unexpected keyword argument 'save_path'
+2026-03-04 17:42:45,125 - ERROR - tools - 测试用例 test_main_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_memoryAnalyer/test_memray_pint.py", line 20, in test_main_function
+    from deeptracer.memoryAnalyer import MemoryAnalyzer
+  File "/home/ricaedo/Deeptracer/deeptracer/memoryAnalyer/__init__.py", line 1, in <module>
+    from .viztracer import *
+  File "/home/ricaedo/Deeptracer/deeptracer/memoryAnalyer/viztracer.py", line 1, in <module>
+    from memory_profiler import profile, _main_helper
+ImportError: cannot import name '_main_helper' from 'memory_profiler' (/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/memory_profiler.py)
+2026-03-04 17:42:45,183 - ERROR - tools - 测试用例 test_flow_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_workflow/test_workflow_flow.py", line 24, in test_flow_function
+    coze.setMessage()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 670, in setMessage
+    result = self._setMessage_agent(
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 513, in _setMessage_agent
+    cozeobject = self.contection()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 372, in contection
+    coze_api_token = get_env_messgae.get_coze_api_token()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 69, in get_coze_api_token
+    device_code = device_oauth_app.get_device_code(workspace_id)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/auth/__init__.py", line 527, in get_device_code
+    res = self._requester.request("post", uri, False, DeviceAuthCode, headers=headers, body=body)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 271, in request
+    return self.send(request)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 391, in send
+    response=self.sync_client.send(request.as_httpx, stream=request.stream),
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 413, in sync_client
+    self._sync_client = SyncHTTPClient()
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 42, in __init__
+    super().__init__(**kwargs)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 686, in __init__
+    proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 244, in _get_proxy_map
+    return {
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 245, in <dictcomp>
+    key: None if url is None else Proxy(url=url)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_config.py", line 214, in __init__
+    raise ValueError(f"Unknown scheme for proxy URL {url!r}")
+ValueError: Unknown scheme for proxy URL URL('socks://127.0.0.1:7897/')
+2026-03-04 17:59:55,066 - ERROR - tools - 测试用例 test_flow_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_workflow/test_workflow_flow.py", line 24, in test_flow_function
+    coze.setMessage()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 670, in setMessage
+    result = self._setMessage_agent(
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 513, in _setMessage_agent
+    cozeobject = self.contection()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 372, in contection
+    coze_api_token = get_env_messgae.get_coze_api_token()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 69, in get_coze_api_token
+    device_code = device_oauth_app.get_device_code(workspace_id)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/auth/__init__.py", line 527, in get_device_code
+    res = self._requester.request("post", uri, False, DeviceAuthCode, headers=headers, body=body)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 271, in request
+    return self.send(request)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 391, in send
+    response=self.sync_client.send(request.as_httpx, stream=request.stream),
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 413, in sync_client
+    self._sync_client = SyncHTTPClient()
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 42, in __init__
+    super().__init__(**kwargs)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 686, in __init__
+    proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 244, in _get_proxy_map
+    return {
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 245, in <dictcomp>
+    key: None if url is None else Proxy(url=url)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_config.py", line 214, in __init__
+    raise ValueError(f"Unknown scheme for proxy URL {url!r}")
+ValueError: Unknown scheme for proxy URL URL('socks://127.0.0.1:7897/')
+2026-03-04 18:01:53,297 - ERROR - tools - 测试用例 test_flow_function 业务执行失败
+Traceback (most recent call last):
+  File "/home/ricaedo/Deeptracer/tests/conftest.py", line 58, in tools
+    result = func(*args, **kwargs)
+  File "/home/ricaedo/Deeptracer/tests/test_workflow/test_workflow_flow.py", line 24, in test_flow_function
+    coze.setMessage()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 670, in setMessage
+    result = self._setMessage_agent(
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 513, in _setMessage_agent
+    cozeobject = self.contection()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 372, in contection
+    coze_api_token = get_env_messgae.get_coze_api_token()
+  File "/home/ricaedo/Deeptracer/deeptracer/workflow/flow.py", line 69, in get_coze_api_token
+    device_code = device_oauth_app.get_device_code(workspace_id)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/auth/__init__.py", line 527, in get_device_code
+    res = self._requester.request("post", uri, False, DeviceAuthCode, headers=headers, body=body)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 271, in request
+    return self.send(request)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 391, in send
+    response=self.sync_client.send(request.as_httpx, stream=request.stream),
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 413, in sync_client
+    self._sync_client = SyncHTTPClient()
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/cozepy/request.py", line 42, in __init__
+    super().__init__(**kwargs)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 686, in __init__
+    proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 244, in _get_proxy_map
+    return {
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_client.py", line 245, in <dictcomp>
+    key: None if url is None else Proxy(url=url)
+  File "/home/ricaedo/下载/yes/envs/Deeptracer/lib/python3.10/site-packages/httpx/_config.py", line 214, in __init__
+    raise ValueError(f"Unknown scheme for proxy URL {url!r}")
+ValueError: Unknown scheme for proxy URL URL('socks://127.0.0.1:7897/')

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepTracer | Python 代码分析助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+</head>
+<body data-theme="mist">
+    <!-- 顶部导航栏 -->
+    <nav class="navbar" id="navbar" hidden>
+        <div class="navbar-inner">
+            <div class="nav-brand">DeepTracer</div>
+            <div class="nav-tabs">
+                <button class="nav-tab" data-page="home">首页</button>
+                <button class="nav-tab is-active" data-page="code">代码</button>
+                <button class="nav-tab" data-page="analysis">分析结果</button>
+            </div>
+            <button class="nav-button" id="themeToggle" type="button">
+                <span class="icon">🌓</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- HOME 页面：文件选择与载入 -->
+    <main class="page page-home is-active" id="pageHome">
+        <div class="home-container">
+            <div class="home-content">
+                <div class="cat-animation" id="catAnimation">
+                    <div class="pixel-cat large">
+                        <span class="cat-ear cat-ear-left"></span>
+                        <span class="cat-ear cat-ear-right"></span>
+                        <span class="cat-face"></span>
+                        <span class="cat-eye cat-eye-left"></span>
+                        <span class="cat-eye cat-eye-right"></span>
+                        <span class="cat-nose"></span>
+                        <span class="cat-tail"></span>
+                        <span class="cat-paw cat-paw-left"></span>
+                        <span class="cat-paw cat-paw-right"></span>
+                    </div>
+                    <p class="cat-status">准备就绪</p>
+                </div>
+
+                <h1 class="home-title">DeepTracer</h1>
+                <p class="home-subtitle">Python 代码分析助手</p>
+
+                <div class="home-actions">
+                    <button class="action-button primary" id="selectFileBtn">
+                        <span class="action-icon">📁</span>
+                        <span>选择 Python 文件</span>
+                    </button>
+                    <input type="file" id="fileInput" accept=".py" hidden />
+                    
+                    <button class="action-button" id="loadSampleBtn">
+                        <span class="action-icon">📝</span>
+                        <span>载入示例</span>
+                    </button>
+                </div>
+
+                <div class="drop-zone" id="dropZone">
+                    <span class="drop-icon">📤</span>
+                    <p>或将文件拖放到这里</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 代码与流程页面 -->
+    <main class="page page-code" id="pageCode">
+        <div class="code-layout-viewport">
+            <div class="code-layout">
+                <!-- 左侧代码区域 -->
+                <div class="code-panel" id="codePanel">
+                    <div class="panel-header">
+                        <h2>源代码</h2>
+                        <div class="panel-actions">
+                            <button class="action-button small primary" id="runAnalysis">分析代码</button>
+                            <button class="action-button small" id="editCode" hidden>✏️ 编辑</button>
+                            <button class="action-button small success" id="saveEdit" hidden>💾 保存</button>
+                            <button class="action-button small" id="cancelEdit" hidden>❌ 取消</button>
+                            <button class="action-button small" id="copyCode" title="复制代码">📋</button>
+                            <button class="icon-button" id="clearCode" title="清空">🗑️</button>
+                            <button class="icon-button" id="reloadFile" title="重新加载">🔄</button>
+                        </div>
+                    </div>
+                    <div class="editor-box">
+                        <div class="line-numbers" id="lineNumbers">1</div>
+                        <textarea id="sourceCode" spellcheck="false" placeholder="Python 代码..." readonly></textarea>
+                        <div class="diff-viewer" id="diffViewer" hidden></div>
+                    </div>
+                    <div class="code-meta">
+                        <span id="fileName">未命名</span>
+                        <span id="lineCount">1 行</span>
+                        <span id="editStatus"></span>
+                    </div>
+                </div>
+
+                <!-- 拖拽分隔条 -->
+                <div class="resize-handle" id="resizeHandle">
+                    <div class="resize-grip"></div>
+                </div>
+
+                <!-- 右侧执行流程区域 -->
+                <div class="flow-panel" id="flowPanel">
+                    <div class="panel-header">
+                        <h2>执行流程</h2>
+                        <button class="action-button small" id="syncTutor">刷新</button>
+                    </div>
+                    <div class="tutor-stage">
+                        <div class="tutor-placeholder" id="tutorPlaceholder">
+                            <div class="placeholder-icon">🎯</div>
+                            <p>点击"刷新"查看执行流程</p>
+                        </div>
+                        <div class="tutor-visualizer" id="tutorVisualizerMount" hidden></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 分析结果页面 -->
+    <main class="page page-analysis" id="pageAnalysis">
+        <div class="analysis-layout">
+            <div class="runtime-banner" id="runtimeBanner" hidden></div>
+
+            <!-- 顶部指标卡片 -->
+            <div class="metrics-grid" id="summaryCards"></div>
+
+            <!-- 分析标签页 -->
+            <div class="tabs-container">
+                <div class="tab-row" id="resultTabs">
+                    <button class="tab-btn is-active" data-tab="workflow">概览</button>
+                    <button class="tab-btn" data-tab="ast">结构</button>
+                    <button class="tab-btn" data-tab="performance">性能</button>
+                    <button class="tab-btn" data-tab="memory">内存</button>
+                </div>
+
+                <div class="tab-content">
+                    <div class="lead-card" id="tabSummary"></div>
+                    <div class="chart-card" id="tabBars"></div>
+                    <div class="notes-card" id="tabPoints"></div>
+                </div>
+            </div>
+
+            <!-- 可视化区域 -->
+            <div class="visualizations-section">
+                <div class="section-header">
+                    <h2>可视化分析</h2>
+                    <div class="viz-tabs" id="vizTabs">
+                        <button class="viz-tab is-active" data-viz="ast">AST 语法树</button>
+                        <button class="viz-tab" data-viz="performance">性能火焰图</button>
+                    </div>
+                </div>
+                <div class="viz-container" id="vizContainer">
+                    <div class="viz-content" id="astVizContent"></div>
+                    <div class="viz-content" id="perfVizContent" hidden></div>
+                </div>
+            </div>
+
+            <!-- 建议区域 -->
+            <div class="suggestions-section">
+                <h2>优化建议</h2>
+                <div class="suggestion-list" id="suggestionList"></div>
+                <div class="suggestion-detail" id="suggestionDetail"></div>
+            </div>
+
+            <div class="chat-section">
+                <div class="section-header">
+                    <h2>开放式答疑</h2>
+                    <button class="action-button small" id="chatStop" type="button" hidden>停止</button>
+                </div>
+                <div class="chat-shell">
+                    <div class="chat-status" id="chatStatus">分析完成后，可以继续追问这段代码为什么这样写、哪里更值得先看、下一步应该怎么改。</div>
+                    <div class="chat-transcript" id="chatTranscript">
+                        <div class="chat-empty">这里会保留你基于当前代码的追问记录。</div>
+                    </div>
+                    <div class="chat-compose">
+                        <textarea id="chatInput" rows="3" placeholder="继续追问，例如：为什么这里会成为热点？"></textarea>
+                        <div class="chat-actions">
+                            <button class="action-button small primary" id="chatSend" type="button">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 加载动画 -->
+    <div class="loading-overlay" id="loadingOverlay" hidden>
+        <div class="loading-dialog">
+            <div class="pixel-cat large" aria-hidden="true">
+                <span class="cat-ear cat-ear-left"></span>
+                <span class="cat-ear cat-ear-right"></span>
+                <span class="cat-face"></span>
+                <span class="cat-eye cat-eye-left"></span>
+                <span class="cat-eye cat-eye-right"></span>
+                <span class="cat-nose"></span>
+                <span class="cat-tail"></span>
+                <span class="cat-paw cat-paw-left"></span>
+                <span class="cat-paw cat-paw-right"></span>
+            </div>
+            <p class="loading-title">正在分析</p>
+            <p class="loading-copy" id="loadingText">像素猫正在巡检代码结构...</p>
+        </div>
+    </div>
+
+    <noscript>请开启 JavaScript 以获得完整体验。</noscript>
+    <script src="/tutor-assets/build/pytutor-embed.bundle.js?d7b0418262" charset="utf-8" defer></script>
+    <script src="{{ url_for('static', path='app.js') }}" defer></script>
+</body>
+</html>

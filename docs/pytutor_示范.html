@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Python Tutor 完整原生效果演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #f8f9fa;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .code-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 15px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #0069d9;
+        }
+        button.reset {
+            background: #28a745;
+        }
+        button.reset:hover {
+            background: #218838;
+        }
+        .visual-area {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            overflow: hidden;
+            background: white;
+        }
+        iframe {
+            width: 100%;
+            height: 700px;
+            border: none;
+        }
+        .tips {
+            padding: 12px 16px;
+            background: #e9f5ff;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            color: #212529;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🐍 Python Tutor 完整原生效果演示（支持代码实时更新）</h2>
+        
+        <div class="tips">
+            📌 核心特性：<br>
+            1. 修改代码后点击「更新可视化」立即生效<br>
+            2. 完整显示执行箭头、堆/栈分区、变量高亮<br>
+            3. 支持单步执行、回退、重置、跳到末尾
+        </div>
+
+        <!-- 代码输入区 -->
+        <div class="code-area">
+            <label style="font-weight: bold; font-size: 16px;">📝 编辑Python代码：</label>
+            <textarea id="code-input" placeholder="输入Python代码...">
+# Python Tutor 完整测试代码
+# 包含：变量、循环、条件、函数、类（覆盖核心教育场景）
+def calculate_sum(n):
+    total = 0
+    for i in range(1, n+1):
+        total += i
+    return total
+
+# 基础变量
+a = 5
+b = 10
+c = a * b
+
+# 条件判断
+if c > 40:
+    result = "大于40"
+else:
+    result = "小于等于40"
+
+# 函数调用
+sum_10 = calculate_sum(10)
+
+# 类和对象
+class Student:
+    def __init__(self, name, score):
+        self.name = name
+        self.score = score
+    
+    def get_grade(self):
+        if self.score >= 90:
+            return "A"
+        elif self.score >= 80:
+            return "B"
+        else:
+            return "C"
+
+# 创建对象
+stu = Student("小明", 95)
+grade = stu.get_grade()
+
+# 打印结果
+print(f"c = {c}，{result}")
+print(f"1到10的和：{sum_10}")
+print(f"{stu.name}的成绩等级：{grade}")
+            </textarea>
+            
+            <div class="btn-group">
+                <button onclick="updateVisualization()">🔄 更新可视化</button>
+                <button class="reset" onclick="resetCode()">🗑️ 重置代码</button>
+            </div>
+        </div>
+
+        <!-- Python Tutor可视化区 -->
+        <div class="visual-area">
+            <label style="display: block; padding: 10px 15px; font-weight: bold; font-size: 16px; background: #e9ecef;">🌐 Python Tutor 原生可视化界面：</label>
+            <iframe id="pytutor-iframe" src="" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <script>
+        // 保存默认代码（用于重置）
+        const DEFAULT_CODE = document.getElementById("code-input").value.trim();
+
+        /**
+         * 核心函数：更新Python Tutor可视化（解决代码不更新问题）
+         * 关键：每次生成全新的URL，强制刷新iframe，避免缓存
+         */
+        function updateVisualization() {
+            // 1. 获取并清理代码（去掉首尾空格）
+            const code = document.getElementById("code-input").value.trim();
+            
+            // 2. 严格URL编码（解决特殊字符、换行符问题）
+            // encodeURIComponent会正确处理换行符(\n)、空格、中文等
+            const encodedCode = encodeURIComponent(code);
+            
+            // 3. 构造Python Tutor原生完整URL（还原所有核心参数）
+            // 这些参数是保证原生效果的关键！
+            const pytutorUrl = `https://pythontutor.com/iframe-embed.html#` +
+                `code=${encodedCode}&` +          // 编码后的代码
+                `origin=opt-frontend.js&` +      // 来源标识（必须）
+                `cumulative=false&` +            // 不累计显示变量（原生效果）
+                `heapPrimitives=true&` +         // 基础类型放入堆区（显示箭头）
+                `textReferences=false&` +        // 禁用文本引用（显示图形化箭头）
+                `py=311&` +                      // 指定Python 3.11（最新稳定版）
+                `rawInputLstJSON=%5B%5D&` +      // 无输入
+                `curInstr=0&` +                  // 从第0步开始
+                `verticalStack=false&` +         // 水平布局（原生）
+                `hideVars=false&` +              // 显示变量（关键）
+                `theme=plain`;                   // 原生主题
+
+            // 4. 强制刷新iframe（解决缓存不更新问题）
+            // 方法：先清空src，再设置新URL，确保浏览器重新加载
+            const iframe = document.getElementById("pytutor-iframe");
+            iframe.src = ""; // 先清空
+            setTimeout(() => {
+                iframe.src = pytutorUrl; // 延迟设置新URL，强制刷新
+            }, 50);
+
+            // 提示用户
+            alert("✅ 可视化已更新！\n\n核心效果说明：\n" +
+                  "1. 代码左侧的▶️ 箭头：当前执行位置\n" +
+                  "2. 右侧堆(Heap)/栈(Stack)：变量存储位置\n" +
+                  "3. 变量之间的箭头：引用关系（比如对象属性）\n" +
+                  "4. 底部按钮：Next(下一步)、Prev(上一步)、Reset(重置)");
+        }
+
+        /**
+         * 重置代码到默认值
+         */
+        function resetCode() {
+            document.getElementById("code-input").value = DEFAULT_CODE;
+            // 同时重置可视化
+            updateVisualization();
+        }
+
+        // 页面加载完成后，自动初始化一次可视化
+        window.onload = function() {
+            updateVisualization();
+        };
+    </script>
+</body>
+</html>
+
