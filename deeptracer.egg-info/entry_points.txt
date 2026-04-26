@@ -1,3 +1,0 @@
-[console_scripts]
-deeptracer = deeptracer.clip:main
-deeptracer-web = deeptracer.server.app:main
