@@ -1,239 +1,87 @@
-# Deeptracer - 🤖 Intelligent Code Analysis & Refactoring Platform 🚀
-
-[![Python >3.10.9](https://img.shields.io/badge/python-%3E3.10.9-blue.svg)](https://www.python.org/downloads/)
-[![Code Analysis](https://img.shields.io/badge/Feature-Code%20Analysis-blueviolet.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-[![Performance Analysis](https://img.shields.io/badge/Feature-Performance%20Analysis-green.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-[![Memory Analysis](https://img.shields.io/badge/Feature-Memory%20Analysis-orange.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-[![AI Refactoring](https://img.shields.io/badge/Feature-AI%20Refactoring-purple.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-
+# DeepTracer
+[🌐 Switch to Chinese Version](./README_zh.md)
 ---
-
-[🌐 切换到中文版本](./README_zh.md)
-
----
-
-## 📋 Project Overview
-
-Deeptracer is an 🤖 AI-powered intelligent code analysis and refactoring platform. It provides professional code optimization solutions for developers through deep code understanding, multi-dimensional visual analysis, and natural language interaction 🚀.
-
-### 🌟 Core Values
-
-- **🧠 Intelligent Analysis**: Combines local tools and cloud agents to deliver in-depth code insights
-- **📊 Multi-dimensional Visualization**: Intuitive display of performance, memory, and execution flow
-- **💡 AI Refactoring Suggestions**: AI-generated concrete and actionable code optimization plans
-- **🎨 User-friendly Interface**: Multi-page layout, Git-style diff interface
-- **🔒 Secure Execution Environment**: Code sandbox configuration with resource limit protection
-
-## ✨ Core Features
-
-### 1. 🔍 Code Analysis Module
-
-- **AST Structure Analysis**: Parses code into abstract syntax trees, identifies patterns and potential issues
-- **Execution Flow Visualization**: Displays execution traces and variable state changes based on Python Tutor
-- **Code Quality Assessment**: Detects common code issues and optimization opportunities
-
-### 2. ⚡ Performance Analysis Module
-
-- **Tools Used**: Pyinstrument
-- **Features**: Function call time analysis, call graph visualization, performance bottleneck detection
-- **Output**: Interactive performance report, visual timeline
-
-### 3. 🧠 Memory Analysis Module
-
-- **Tools Used**: Python `tracemalloc`
-- **Features**: Peak memory tracking, allocation hotspot summary, runtime memory snapshot
-- **Output**: In-app memory cards and structured memory insights
-
-### 4. 🤖 Intelligent Refactoring Suggestions
-
-- **AI-driven**: Deep code understanding powered by the Coze agent platform
-- **Concrete & Actionable**: Modifications displayed in a Git-style diff interface
-- **Technical Explanations**: Each suggestion includes principles and impact assessment
-- **Interactive Control**: Accept/reject individual suggestions, apply selected changes in batches
-
-### 5. 🖥️ Visual Interface
-
-- **Multi-page Layout**:
-  - 🏠 **Home**: Clean file selection entry with animated code analysis cat
-  - 💻 **Code Page**: Left-side code editor, right-side execution flow visualization, draggable resize
-  - 📊 **Analysis Results**: Integrates AST visualization, performance flame graph, optimization suggestions
-- **Interactive Features**:
-  - Free page navigation
-  - Draggable code/flow area resize
-  - Git-style code diff comparison
-  - One-click code copy
-
-## 🛠️ Tech Stack
-
-### Frontend
-
-- Vanilla JavaScript (no framework dependencies)
-- Modern CSS (CSS variables, Grid layout)
-- FastAPI + Jinja2 template engine
-
-### Backend
-
-- FastAPI (web framework)
-- Python >3.10.9
-- Analysis Tools:
-  - Pyinstrument (performance)
-  - Python `tracemalloc` (memory)
-  - Python Tutor (execution visualization)
-  - AST module (code structure analysis)
-  - Pyvis (AST tree visualization)
-- AI Platform: Coze API integration
-
-### Deployment
-
-- CLI tool: `deeptracer-web`
-- Browser access: http://localhost:8000
-
-## 📦 Installation & Usage
-
-### Requirements
-
-- Python >3.10.9 (3.10.10+)
-- Modern browser (Chrome / Firefox / Safari)
-
-### Installation
-
-1. **Clone the repository**
-
-```bash
-git clone <repository-url>
-cd deeptracer
-```
-
-2. **Install Python dependencies**
-
-```bash
+DeepTracer is a code analysis tool designed for Python code understanding, runtime observation, and improvement suggestions. It mainly provides a local Web workbench, supporting the generation of Python code structure, performance analysis and optimization suggestions through an intuitive visual interface. It is suitable for scenarios such as code learning, teaching demonstrations, and lightweight code diagnosis.
+**Important Note**: The core runtime entry of the current tool is the `deeptracer-web` command. The `deeptracer` command is retained but is a residual function with incomplete implementation and is not recommended for use.
+## 📋 Core Features
+DeepTracer focuses on converting Python code into readable, locatable, and discussable analysis results. Its core capabilities are as follows:
+- Code Loading: Supports local .py file selection, drag-and-drop upload, direct code pasting, or loading built-in sample code
+- Multi-dimensional Analysis: Completes AST structure analysis and performance analysis (based on pyinstrument) using local tools
+- Visualization Display: Provides AST syntax tree, performance flame graph visualization, and Python Tutor code execution flow visualization
+- Optimization Suggestions: Generates actionable suggestions with priority, risk prompts, code anchors, and modification previews
+- Open-ended Q&A: Supports streaming Q&A around the current code and analysis results, with Markdown rendering support
+- Model Enhancement (Optional): After configuring an OpenAI-compatible model, more natural multi-agent analysis explanations can be obtained
+## 🎯 Target Users
+- Python Beginners: Quickly understand code structure, function responsibilities, and key points to focus on
+- Teachers/TAs: Intuitively display code runtime behavior, structural logic, and optimization directions
+- Developers: Perform quick lightweight diagnosis on a single Python file/code snippet
+- Project Analysts: Understand tool input/output, functional boundaries, and core capabilities
+## 🚀 Quick Start (Windows + Conda Environment Only)
+### 1. Environment Preparation
+Open Anaconda Prompt or PowerShell in the project root directory and execute the following commands to configure the environment:
+```powershell
+# Create and activate a virtual environment
+conda create -n deeptracer python=3.11 -y
+conda activate deeptracer
+# Upgrade pip and install the project
+python -m pip install --upgrade pip
 pip install -e .
 ```
-
-### Basic Usage
-
-#### Start Web Interface
-
-```bash
-# Start web server
+### 2. Start the Web Workbench (Core Command)
+After the environment is installed, directly execute the core command to start the local Web service:
+```powershell
 deeptracer-web
-
-# Or run with Python directly
-python -m deeptracer.server
-
-# Or use uvicorn
-uvicorn deeptracer.server.app:main --reload
 ```
-
-3. **Access Interface**
-
-Open browser to: http://localhost:8000
-
-4. **Usage Flow**
-
-- **Select File**: Click "Select Python File" or drag & drop file
-- **Analyze Code**: Click "Analyze Code" button
-- **View Results**:
-  - Code page: View source code and execution flow
-  - Analysis results page: View AST visualization, performance analysis, optimization suggestions
-- **Edit Code**: Click "✏️ Edit" to modify code, Git-style diff shown after save
-- **Copy Code**: Click "📋" to copy code in one click
-
-#### Configuration
-
-- **Environment Variables**:
-  - `COZE_API_TOKEN`: Coze API token
-  - `COZE_BOT_ID`: Coze bot ID
-  - `COZE_WORKFLOW_ID`: Coze workflow ID
-
-- **Config File**:
-  - `~/.deeptracer/.env.local`: Local configuration
-
-## 🏗️ System Architecture
-
-### Overall Architecture
-
+After the service starts, the browser will open automatically (or access manually):
+```text
+http://127.0.0.1:8000
 ```
-🤖 User Web Interface → 🚀 Analysis Engine → 📊 Data Collection → 💡 Agent Processing → 📋 Report Generation → 🖥️ Browser Display
+Note: If you encounter the error "URL spelling may be incorrect, please check" when accessing the URL, please verify that the `deeptracer-web` service has been started successfully and the URL is entered correctly.
+### 3. Basic Usage Process
+1. After opening the Web page, enter Python code by "Pasting Code", "Uploading .py File", or "Loading Sample"
+2. Click "Analyze Code", and the system will automatically execute the LangGraph analysis pipeline to generate analysis results
+3. View the analysis results: First understand the overall code situation through "Overview", then switch to the "Structure/Performance" tabs to view details
+4. View optimization suggestions and modification previews, and observe the code execution process through the "Execution Flow" visualization on the right
+5. (Optional) Continue asking questions around the current code in the Q&A area to get targeted answers
+## ⚙️ Optional Configuration: Model Enhancement (OpenAI Compatible)
+When the model API is not configured, the tool will automatically fall back to the "local analysis + rule-based suggestions" mode, which does not affect basic usage at all; after configuring the model, more natural multi-agent analysis explanations can be obtained. Note: Environment variables do not need to be set manually; they need to be configured in a specified local file, and only Windows systems are supported currently.
+### Configuration Steps (No Manual Environment Variable Setting Required)
+```powershell
+# 1. Create/edit the local configuration file (fixed path)
+~/.deeptracer/.env.local
+# 2. Add the following configurations to the file (adjust as needed)
+# OpenAI official interface configuration
+OPENAI_API_KEY="Your API Key"
+OPENAI_MODEL="gpt-4.1-mini"
+# If using a third-party OpenAI-compatible gateway, add the following additionally
+OPENAI_BASE_URL="https://your-gateway-url/v1"
+# Optional configurations (add as needed)
+DEEPTRACER_MODEL_NAME="Custom Model Name"  # Has higher priority than OPENAI_MODEL
+DEEPTRACER_MODEL_TEMPERATURE=0.2  # Default 0.2, controls the randomness of generated content
 ```
-
-### Layered Processing Pipeline 💫
-
-1. **📊 Data Collection Layer**: Runs multiple analyzers in parallel (Pyinstrument, `tracemalloc`, Python Tutor, AST parsing)
-2. **💡 Intelligent Analysis Layer**: AI agent synthesizes insights and identifies optimization opportunities
-3. **💡 Suggestion Generation Layer**: Generates concrete code modification plans
-4. **💬 Interactive Response Layer**: Handles user feedback and chat requests
-
-### Data Flow 💥
-
-```
-📄 Raw Code
-    → 🚀 Parallel analysis execution
-    → 📊 Unified data format
-    → 💡 Agent processing
-    → 💡 Structured suggestions
-    → 🖥️ Frontend dynamic rendering
-    → 💬 User interaction
-    → 📋 Final output
-```
-
-## 🔧 Toolchain 
-
-| Type | Tool | Responsibility |
-|------|------|----------------|
-| Performance | Pyinstrument | Function timing, bottleneck detection |
-| Memory | `tracemalloc` | Peak-memory tracking, allocation hotspot summary |
-| Execution | Python Tutor | Step tracing, variable state changes |
-| Code Structure | AST | Parsing, abstract syntax tree generation |
-| AST Visualization | Pyvis | Interactive AST network graph |
-
-## 📖 Development Guide
-
-### Code Style 🫣
-
-1. **Encoding**: All files must use UTF-8
-2. **File I/O**: All `open` calls must explicitly set `encoding='utf-8'`
-3. **Python Version**: Developed for Python >3.10.9
-4. **Functions**: Use type annotations and docstrings
-
-```python
-def function(element: int) -> int:
-    """Return 1 (explain the function purpose!)"""
-    return 1
-```
-
-### Contribution Flow 🤗
-
-1. Open an Issue to report bugs or propose features
-2. Fork the repo and create a feature branch
-3. Implement and test your changes
-4. Submit a Pull Request with a clear description
-5. Merge after code review
-
-### Testing 🤤
-
-- **Framework**: pytest
-- **Test Directory**: Tests organized by module under `tests/`
-
-## 🙏 Acknowledgments 🤗
-
-- [Pyinstrument](https://github.com/joerick/pyinstrument): Performance profiler 🥳
-- [Python Tutor](https://github.com/hcientist/OnlinePythonTutor): Execution visualizer 👻
-- [cozepy](https://github.com/coze-dev/coze-py): AI agent platform 🤖
-- [python-dotenv](https://github.com/theskumar/python-dotenv): Environment variables 😤
-- [objprint](https://github.com/gaogaotiantian/objprint): Human-readable object printing 😈
-- [tqdm](https://github.com/tqdm/tqdm): Progress bar 😇
-- [pyvis](https://github.com/WestHealth/pyvis): Network visualization 🧩
-- [networkx](https://github.com/networkx/networkx): Network analysis 🎲
-- [fastapi](https://github.com/fastapi/fastapi): Backend core 🚀
-- [uvicorn](https://github.com/Kludex/uvicorn): App server 💥
-
----
-
-## 📞 Contact
-
-For questions or feedback, feel free to open an Issue or contact us via email.
-
----
-
-**🚀 Most importantly, have fun!** 🎉
+### Configuration File and Configuration Item Description
+- **Configuration File Path**: Fixed as `~/.deeptracer/.env.local` (local configuration file). All environment variables must be configured in this file; there is no need to set system environment variables manually.
+- **Mandatory Item**: `OPENAI_API_KEY`, which is your OpenAI interface key.
+- **Optional Configuration Items**:
+  - `OPENAI_MODEL`: Recommended default is gpt-4.1-mini, which can be adjusted according to needs.
+  - `OPENAI_BASE_URL`: Third-party compatible gateway address; no need to configure for the official interface.
+  - `DEEPTRACER_MODEL_PROVIDER`: Default is `openai`, no additional configuration required.
+  - `DEEPTRACER_MODEL_NAME`: Has higher priority than `OPENAI_MODEL`; custom model name can be set.
+  - `DEEPTRACER_MODEL_TEMPERATURE`: Default 0.2, controls the randomness of generated content.
+After configuration is completed, re-execute `deeptracer-web` to start the service, and the model enhancement function can be enabled.
+## ⚠️ Common Issues and Troubleshooting
+### Startup Failure Troubleshooting
+1. Confirm that the virtual environment has been activated via `conda activate deeptracer` in the terminal.
+2. Confirm that `pip install -e .` has been executed to complete the project installation.
+3. After modifying the backend code, you need to re-execute `deeptracer-web` to restart the service.
+4. When enabling the model function, confirm that `OPENAI_API_KEY` has been set correctly.
+### Other Notes
+- The Web frontend only supports .py suffix files; other file types will prompt an error.
+- Performance analysis results depend on the local runtime environment and code executability; untrusted code is not recommended to be analyzed directly (implemented based on pyinstrument).
+- The model function is an optional enhancement; all local analysis capabilities can be used normally without configuration.
+- If an error is encountered, you can provide the terminal output information to facilitate problem troubleshooting.
+## 📌 Functional Limitations
+- Currently, the model provider only supports OpenAI-compatible interfaces.
+- The `deeptracer` command is a residual function with incomplete implementation and is not recommended for use.
+## 💡 Core Value
+Based on "locally verifiable runtime data" and combined with optional model enhancement, DeepTracer splits complex Python code analysis into intuitive and easy-to-understand modules. It allows people who have not participated in code development to quickly understand code structure, runtime status, and optimization directions, making it an efficient tool for code learning, teaching, and lightweight diagnosis.

@@ -1,236 +1,87 @@
-# Deeptracer - 🤖 智能代码分析与重构平台 🚀
-
-[![Python >3.10.9](https://img.shields.io/badge/python-%3E3.10.9-blue.svg)](https://www.python.org/downloads/)
-[![Code Analysis](https://img.shields.io/badge/功能-代码分析-blueviolet.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-[![Performance Analysis](https://img.shields.io/badge/功能-性能分析-green.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-[![Memory Analysis](https://img.shields.io/badge/功能-内存分析-orange.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-[![AI Refactoring](https://img.shields.io/badge/功能-智能重构-purple.svg)](https://github.com/Ricardo-shuo-liu/deeptracer)
-
----
-
+# DeepTracer
 [🌐 切换到英文版本 (Switch to English)](./README.md)
-
 ---
 
-## 📋 项目概述
-
-Deeptracer 是一个 🤖 AI驱动的智能代码分析与重构平台，通过深度代码理解、多维度可视化分析和自然语言交互，为开发者提供专业级的代码优化解决方案 🚀。
-
-### 🌟 核心价值
-
-- **🧠 智能分析**：结合本地工具与云端智能体，提供深度代码洞察
-- **📊 多维度可视化**：性能、内存、执行流程的直观展示
-- **💡 智能重构建议**：AI生成具体可执行的代码优化方案
-- **🎨 用户友好界面**：三窗口可调整布局，Git风格diff界面
-- **🔒 安全执行环境**：代码沙箱配置，资源限制保护
-
-### 📌 版本规划
-
-- **MVP版本**：聚焦核心分析流程与基础重构功能
-- **完整版本**：扩展智能对话、动态更新等高级特性
-
-## ✨ 核心功能
-
-### 1. 🔍 代码分析模块
-
-- **AST结构分析**：解析代码生成抽象语法树，识别代码模式和潜在问题
-- **执行流程可视化**：基于Python Tutor的执行轨迹和变量状态变化展示
-- **代码质量评估**：识别常见代码问题和优化机会
-
-### 2. ⚡ 性能分析模块
-
-- **使用工具**：Pyinstrument
-- **功能**：函数调用时间分析、调用关系可视化、性能瓶颈检测
-- **输出**：JSON格式跟踪数据，可交互时间线
-
-### 3. 🧠 内存分析模块
-
-- **使用工具**：Python `tracemalloc`
-- **功能**：峰值内存跟踪、分配热点摘要、运行期内存快照
-- **输出**：应用内内存卡片与结构化内存摘要
-
-### 4. 🤖 智能重构建议
-
-- **AI驱动**：基于Coze智能体平台的深度代码理解
-- **具体可执行**：Git风格diff界面展示修改建议
-- **技术解释**：每个建议附带技术原理说明和修改影响评估
-- **交互控制**：接受/拒绝单个重构建议，批量应用选中修改
-
-### 5. 🖥️ 可视化界面
-
-- **三窗口布局**：
-  - 📈 分析可视化窗口：性能时间线、执行流程、代码结构的多标签视图
-  - 💻 代码重构窗口：Git风格diff界面，智能重构建议与交互控制
-  - 💬 智能体对话窗口：技术解释与自然语言交互界面
-- **交互特性**：自由拖拽调整的窗口分割，响应式布局适配
-
-## 🛠️ 技术栈
-
-### 前端
-
-- React 18 + TypeScript
-- Vite（构建工具）
-- React Split Panes（窗口布局）
-- Monaco Editor（代码编辑器）
-- ECharts（图表可视化）
-- Tailwind CSS（样式框架）
-
-### 后端
-
-- FastAPI（Web框架）
-- Python >3.10.9
-- 分析工具：
-  - Pyinstrument（性能分析）
-  - Python `tracemalloc`（内存分析）
-  - Python Tutor（执行可视化）
-  - AST模块（代码结构分析）
-- AI平台：Coze API集成
-- 模板引擎：Jinja2
-
-### 部署
-
-- Docker容器化
-- 命令行工具
-
-## 📦 安装与使用
-
-### 环境要求
-
-- Python >3.10.9 (3.10.10+)
-- Node.js 16+
-- 现代浏览器（Chrome/Firefox/Safari）
-
-### 安装步骤
-
-1. **克隆仓库**
-
-```bash
-git clone <repository-url>
-cd deeptracer
-```
-
-2. **安装Python依赖**
-
-```bash
+DeepTracer 是一个面向 Python 代码理解、运行观察和改进建议的代码分析工具，核心提供本地 Web 工作台，支持通过直观的可视化界面完成 Python 代码的结构、性能分析及优化建议生成，适用于代码学习、教学演示、轻量级代码诊断等场景。
+**重要说明**：当前工具核心运行入口为 `deeptracer-web` 命令，`deeptracer` 命令虽保留但为残余功能，具体实现不完善，不推荐使用。
+## 📋 核心功能
+DeepTracer 专注于将 Python 代码转化为可阅读、可定位、可讨论的分析结果，核心能力如下：
+- 代码载入：支持本地 .py 文件选择、拖拽上传，或直接粘贴代码、载入内置示例
+- 多维度分析：基于本地工具完成 AST 结构分析、性能分析（pyinstrument）
+- 可视化展示：提供 AST 语法树、性能火焰图可视化，以及 Python Tutor 代码执行流程可视化
+- 优化建议：生成带优先级、风险提示、代码锚点及修改预览的可操作建议
+- 开放式答疑：围绕当前代码和分析结果进行流式问答，支持 Markdown 渲染
+- 模型增强（可选）：配置 OpenAI 兼容模型后，可获得更自然的多智能体分析解释
+## 🎯 目标用户
+- Python 初学者：快速理解代码结构、函数职责及重点关注内容
+- 教学者/助教：直观展示代码运行行为、结构逻辑及优化方向
+- 开发者：对单个 Python 文件/代码片段进行快速轻量级诊断
+- 项目分析人员：理解工具输入输出、功能边界及核心能力
+## 🚀 快速开始（仅支持 Windows + Conda 环境）
+### 1. 环境准备
+在项目根目录打开 Anaconda Prompt 或 PowerShell，执行以下命令配置环境：
+```powershell
+# 创建并激活虚拟环境
+conda create -n deeptracer python=3.11 -y
+conda activate deeptracer
+# 升级 pip 并安装项目
+python -m pip install --upgrade pip
 pip install -e .
 ```
-
-3. **安装前端依赖**
-
-```bash
-npm install
+### 2. 启动 Web 工作台（核心命令）
+环境安装完成后，直接执行核心命令启动本地 Web 服务：
+```powershell
+deeptracer-web
 ```
-
-### 基本使用
-
-#### 命令行接口
-
-```bash
-#配置你的coze key
-deeptracer --key yourKeys
-
-# 基础分析命令
-deeptracer script.py
-
-# 启用完整AST语法树可视化
-deeptracer script.py --all
-# 或使用简短形式
-deeptracer script.py -a
+服务启动后，浏览器自动打开（或手动访问）：
+```text
+http://127.0.0.1:8000
 ```
-
-#### 配置说明
-
-- **环境变量**：
-  - `COZE_API_TOKEN`：Coze API令牌
-  - `COZE_BOT_ID`：Coze机器人ID
-  - `COZE_WORKFLOW_ID`：Coze工作流ID
-
-- **配置文件**：
-  - `~/.deeptracer/.env.local`：本地配置文件
-
-## 🏗️ 系统架构
-
-### 整体架构
-
+### 3. 基础使用流程
+1. 打开 Web 页面后，通过「粘贴代码」「上传 .py 文件」或「载入示例」输入 Python 代码
+2. 点击「分析代码」，系统自动执行 LangGraph 分析流水线，生成分析结果
+3. 查看分析结果：先通过「概览」了解代码整体情况，再切换「结构/性能」标签查看详情
+4. 查看优化建议及修改预览，可通过右侧「执行流程」可视化观察代码运行过程
+5. （可选）在答疑区域围绕当前代码继续提问，获取针对性解答
+## ⚙️ 可选配置：模型增强（OpenAI 兼容）
+未配置模型 API 时，工具会自动回退到「本地分析 + 规则化建议」模式，完全不影响基础使用；配置模型后，可获得更自然的多智能体分析解释。需注意：环境变量无需手动设置，需配置在指定本地文件中，且当前仅支持 Windows 系统运行。
+### 配置步骤（无需手动设置环境变量）
+```powershell
+# 1. 新建/编辑本地配置文件（路径固定）
+~/.deeptracer/.env.local
+# 2. 在文件中添加以下配置（根据需求调整）
+# OpenAI 官方接口配置
+OPENAI_API_KEY="你的 API Key"
+OPENAI_MODEL="gpt-4.1-mini"
+# 若使用第三方 OpenAI 兼容网关，额外添加
+OPENAI_BASE_URL="https://你的接口地址/v1"
+# 可选配置（按需添加）
+DEEPTRACER_MODEL_NAME="自定义模型名称"  # 优先级高于 OPENAI_MODEL
+DEEPTRACER_MODEL_TEMPERATURE=0.2  # 默认0.2，控制生成内容随机性
 ```
-🤖 用户命令行输入 → 🚀 分析引擎 → 📊 数据收集 → 💡 智能体处理 → 📋 报告生成 → 🖥️ 浏览器展示
-```
-
-### 分层处理管道💫
-
-1. **📊 数据采集层**：并行执行多分析工具（Pyinstrument、`tracemalloc`、Python Tutor、AST解析）
-2. **💡 智能分析层**：AI智能体综合解读，识别优化机会
-3. **💡 建议生成层**：生成具体代码修改方案
-4. **💬 交互响应层**：处理用户反馈与对话请求
-
-### 数据流流程💥
-
-```
-📄 原始代码
-    → 🚀 并行分析工具执行
-    → 📊 统一数据格式
-    → 💡 智能体处理
-    → 💡 结构化建议
-    → 🖥️ 前端动态渲染
-    → 💬 用户交互
-    → 📋 最终输出
-```
-
-## 🔧 工具链说明🧐
-
-| 工具类型 | 使用工具 | 负责功能 |
-|---------|----------|----------|
-| 性能分析 | Pyinstrument | 函数调用时间分析、性能瓶颈检测 |
-| 内存分析 | `tracemalloc` | 峰值内存跟踪、分配热点摘要 |
-| 执行可视化 | Python Tutor | 执行流程、变量状态变化 |
-| 代码结构分析 | AST模块 | 代码结构解析、抽象语法树生成 |
-
-## 📖 开发指南
-
-### 编码规范🫣
-
-1. **文件编码**：所有文件必须使用UTF-8编码
-2. **文件操作**：所有文件的open必须显式标注encoding='utf-8'
-3. **Python版本**：统一使用Python >3.10.9开发
-4. **函数定义**：使用类型注解和文档字符串
-
-```python
-def function(element:int)->int:
-    """返回1(说明函数的作用！)"""
-    return 1
-```
-
-### 贡献流程🤗
-
-1. 提交Issue汇报问题或功能建议
-2. Fork仓库并创建特性分支
-3. 实现功能并编写测试
-4. 提交Pull Request，说明功能变更
-5. 代码审查通过后合并
-
-### 测试说明🤤
-
-- **测试框架**：pytest
-- **测试目录**：`tests/`目录下按模块组织测试用例
-
-## 🙏 致谢🤗
-
-- [Pyinstrument](https://github.com/joerick/pyinstrument)：性能分析工具🥳
-- [Python Tutor](https://github.com/hcientist/OnlinePythonTutor)：执行可视化工具👻
-- [cozepy](https://github.com/coze-dev/coze-py)：智能体平台🤖
-- [python-dotenv](https://github.com/theskumar/python-dotenv):加载环境变量😤
-- [objprint](https://github.com/gaogaotiantian/objprint):打印Python对象以人类可读格式😈
-- [tqdm](https://github.com/tqdm/tqdm):进度条😇
-- [pyvis](https://github.com/WestHealth/pyvis):可视化网络🧩
-- [networkx](https://github.com/networkx/networkx):网络分析🎲
-- [fastapi](https://github.com/fastapi/fastapi):后端核心工具🚀
-- [uvicorn](https://github.com/Kludex/uvicorn):启动app服务💥
----
-
-## 📞 联系方式
-
-如有问题或建议，欢迎通过Issue或邮件联系我们。
-
----
-
-**🚀 最重要的是，玩的开心！** 🎉
+### 配置文件及配置项说明
+- **配置文件路径**：固定为 `~/.deeptracer/.env.local`（本地配置文件），所有环境变量需在此文件中配置，无需手动设置系统环境变量
+- **必配项**：`OPENAI_API_KEY`，即你的 OpenAI 接口密钥
+- **可选配置项**：
+  - `OPENAI_MODEL`：默认推荐 gpt-4.1-mini，可根据需求调整
+  - `OPENAI_BASE_URL`：第三方兼容网关地址，官方接口无需配置
+  - `DEEPTRACER_MODEL_PROVIDER`：默认是 `openai`，无需额外配置
+  - `DEEPTRACER_MODEL_NAME`：优先级高于 `OPENAI_MODEL`，可自定义模型名称
+  - `DEEPTRACER_MODEL_TEMPERATURE`：默认 0.2，控制生成内容的随机性
+配置完成后，重新执行 `deeptracer-web` 启动服务，即可启用模型增强功能。
+## ⚠️ 常见问题与排查
+### 启动失败排查
+1. 确认终端已通过 `conda activate deeptracer` 激活虚拟环境
+2. 确认已执行 `pip install -e .` 完成项目安装
+3. 修改后端代码后，需重新执行 `deeptracer-web` 重启服务
+4. 启用模型功能时，确认已正确设置 `OPENAI_API_KEY`
+### 其他说明
+- Web 前端仅支持 .py 后缀文件，其他文件类型会提示错误
+- 性能分析结果依赖本地运行环境和代码可执行性，不可信代码不建议直接分析（基于pyinstrument实现）
+- 模型功能为可选增强，不配置也可正常使用所有本地分析能力
+- 若遇到报错，可提供终端输出信息，便于排查问题
+## 📌 功能限制
+- 当前模型提供方仅支持 OpenAI 兼容接口
+- `deeptracer` 命令为残余功能，实现不完善，不推荐使用
+## 💡 核心价值
+DeepTracer 以「本地可验证的运行数据」为基础，结合可选的模型增强，将复杂的 Python 代码分析拆分为直观、易懂的模块，让未参与代码开发的人也能快速理解代码结构、运行状态及优化方向，是代码学习、教学和轻量级诊断的高效工具。
