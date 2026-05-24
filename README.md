@@ -85,3 +85,19 @@ After configuration is completed, re-execute `deeptracer-web` to start the servi
 - The `deeptracer` command is a residual function with incomplete implementation and is not recommended for use.
 ## 💡 Core Value
 Based on "locally verifiable runtime data" and combined with optional model enhancement, DeepTracer splits complex Python code analysis into intuitive and easy-to-understand modules. It allows people who have not participated in code development to quickly understand code structure, runtime status, and optimization directions, making it an efficient tool for code learning, teaching, and lightweight diagnosis.
+
+
+🙏 Acknowledgements
+Project Contributors
+
+    Xiaocheng Wang | Trae Engineer
+    Ran Wei | Former Engineer of Sony & Huawei
+    Zhongping Zhou | Joincare Engineer
+
+Community Support
+
+    GTOC Community
+    Baidu PFCC Community
+
+Open Source Reference
+The core visualization capability of this project is upgraded and iterated based on [OnlinePythonTutor](https://github.com/hcientist/OnlinePythonTutor), with adaptive development and functional expansion implemented. Our contributions were submitted to relevant servers via email instead of being merged into the GitHub repository. DeepTracer achieves further comprehensive upgrades based on the original kernel.
