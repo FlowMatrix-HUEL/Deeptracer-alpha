@@ -56,19 +56,16 @@ def _is_color_supported() -> bool:
             # Signatures for console mode read and write APIs
             kernel32.GetConsoleMode.argtypes = [wintypes.HANDLE, POINTER(wintypes.DWORD)]
             kernel32.GetConsoleMode.restype = wintypes.BOOL
-            kernel32.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
-            kernel32.SetConsoleMode.restype = wintypes.BOOL
 
             handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
             if handle == INVALID_HANDLE_VALUE:
                 return False
             mode = wintypes.DWORD()
-            if not kernel32.GetConsoleMode(handle, byref(mode)):
-                return False
             ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x04
-            new_mode = mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING
-            success = kernel32.SetConsoleMode(handle, new_mode)
-            return bool(success)
+            if kernel32.GetConsoleMode(handle, byref(mode)):
+                vt_enabled = bool(mode.value & ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+                return vt_enabled
+            return False
         except BaseException as e:
             if isinstance(e, (SystemExit, KeyboardInterrupt)):
                 raise e
@@ -112,6 +109,7 @@ def set_color(s: str, color: str) -> str:
         except AttributeError:
             return s
     return s  # pragma: no cover
+
 def print_color(text:str,
                 color:str)->None:
     """
