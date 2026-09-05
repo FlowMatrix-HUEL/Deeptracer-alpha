@@ -2,102 +2,131 @@ import os
 import sys
 import platform
 import subprocess
+from enum import Enum
+
+
+class Colors(Enum):
+    """ANSI color codes for terminal output"""
+
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    BLACK = "\033[30m"
+    MAGENTA = "\033[35m"
+    CYAN = "\033[36m"
+    WHITE = "\033[37m"
+    NC = "\033[0m"  # No Color
 
 
 def _is_color_supported() -> bool:
     """
-    检测当前环境是否支持颜色输出
-    
+    Detect whether the current environment supports color output
+
     Args:
         None
     Returns:
-        result(bool): 判断是否支持颜色输出
+        result(bool): Whether color output is supported
     """
-    # 非交互式终端直接不支持
+    # Non-interactive terminals do not support color output
     if not sys.stdout.isatty():
         return False
-    
-    # Windows系统处理
+
+    # Handle Windows systems
     if sys.platform.startswith("win"):
         try:
-            # 获取Windows版本号
+            # Get Windows version number
             win_version = platform.version()
-            major, _, build = map(int, win_version.split("."))
+            ver_parts = win_version.split(".")
+            if len(ver_parts) < 3:
+                return False
+            major, _, build = map(int, ver_parts[:3])
             if not (major >= 10 and build >= 10586):
                 return False
-            from ctypes import windll, WinError
-            # 主动开启Windows终端ANSI支持
+            from ctypes import windll, wintypes, POINTER, byref
+
+            # Actively enable ANSI support for Windows terminal
+            INVALID_HANDLE_VALUE = wintypes.HANDLE(-1)
+            STD_OUTPUT_HANDLE = wintypes.DWORD(-11)
             kernel32 = windll.kernel32
-            handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
-            if handle != 0:
-                kernel32.SetConsoleMode(handle, 7)
-            return True
-        # 明确捕获可能的异常类型 避免吞掉关键错误
-        except (ValueError, AttributeError, WinError, OSError):
+
+            # Declare Win32 API signatures. Prevent 64‑bit handle truncation and silent API failure
+            kernel32.GetStdHandle.argtypes = [wintypes.DWORD]
+            kernel32.GetStdHandle.restype = wintypes.HANDLE
+            # Signatures for console mode read and write APIs
+            kernel32.GetConsoleMode.argtypes = [wintypes.HANDLE, POINTER(wintypes.DWORD)]
+            kernel32.GetConsoleMode.restype = wintypes.BOOL
+            kernel32.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+            kernel32.SetConsoleMode.restype = wintypes.BOOL
+
+            handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+            if handle == INVALID_HANDLE_VALUE:
+                return False
+            mode = wintypes.DWORD()
+            if not kernel32.GetConsoleMode(handle, byref(mode)):
+                return False
+            ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x04
+            new_mode = mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            success = kernel32.SetConsoleMode(handle, new_mode)
+            return bool(success)
+        except BaseException as e:
+            if isinstance(e, (SystemExit, KeyboardInterrupt)):
+                raise e
             return False
-    # Linux/macOS 系统处理
+    # Handle Linux/macOS systems
     else:
         try:
-            # 检测颜色支持
-            result = subprocess.check_output(
-                ["tput", "colors"], 
-                stderr=subprocess.DEVNULL,
-                text=True
-            )
+            # Detect color support
+            result = subprocess.check_output(["tput", "colors"], stderr=subprocess.DEVNULL, text=True)
             color_count = int(result.strip())
             return color_count >= 8
-        # 明确捕获 tput 相关异常
+        # Explicitly catch tput-related exceptions
         except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
-            return False 
-        
-color_support = _is_color_supported()
+            return False
+
+
+COLOR_SUPPORT = _is_color_supported()
+
+
+def set_color(s: str, color: str) -> str:
+    """
+    Wrap input string with specified ANSI terminal color escape sequence.
+    Color name argument is case-insensitive. If color is unsupported or invalid,
+    returns original raw string without any escape codes.
+
+    Args:
+        s: Original text string to be colored
+        color: Color enum name, case-insensitive (e.g. "red", "GREEN", "Yellow")
+    Returns:
+        str: Text wrapped with ANSI color codes if color output is available,
+             otherwise the unmodified input string
+    Examples:
+        >>> set_color(s="hello world",color="red")
+
+    """
+
+    if COLOR_SUPPORT:
+        try:
+            c_enum = getattr(Colors, color.strip().upper())
+            return f"{c_enum.value}{s}{Colors.NC.value}"
+        except AttributeError:
+            return s
+    return s  # pragma: no cover
 def print_color(text:str,
-                fore_color:str=None,
-                back_color:str=None,
-                bold:bool=False,
-                underline:bool=False)->None:
+                color:str)->None:
     """
     带颜色打印函数
     Args:
         text(str): 要输出的文本
-        fore_color(str): 前景色
-            {"black","red","green","yellow",
-            "blue","purple","cyan","white"}
-        back_color(str): 背景色
-        bold(bool)->Flase: 是否加粗默
-        underline(bool)->False: 是否下划线
+        color(str): 颜色
     
     Returns:
         None
         
-    "本函数只支持 linux,macos,window10+ 使用"
+    "本函数只支持 linux,macos,部分window 使用"
     """
-    if not color_support:
-        # 不支持颜色，直接输出原始文本
-        print(text)
-        return
-    
-    # 颜色映射表
-    color_map = {
-        "black": 0, "red": 1, "green": 2, "yellow": 3,
-        "blue": 4, "purple": 5, "cyan": 6, "white": 7
-    }
-    # 初始化样式列表
-    styles = []
-    if bold:
-        styles.append("1")
-    if underline:
-        styles.append("4")
-    # 前景色（30+颜色编码）
-    if fore_color in color_map:
-        styles.append(str(30 + color_map[fore_color]))
-    # 背景色（40+颜色编码）
-    if back_color in color_map:
-        styles.append(str(40 + color_map[back_color]))
-    # 拼接ANSI序列
-    style_str = ";".join(styles) if styles else "0"
-    print(f"\033[{style_str}m{text}\033[0m")
 
+    print(set_color(s=text,color=color))
 def get_deeptracer_root():
     """
     获取deeptracer库的绝对根路径
@@ -118,7 +147,9 @@ DEEPTRACER_ROOT = get_deeptracer_root()
 DEEPTRACER_DEV_ROOT = os.path.dirname(DEEPTRACER_ROOT)
 #print(DEEPTRACER_DEV_ROOT)
 __all__ = [
-    "is_color_supported",
+    "_is_color_supported",
+    "COLOR_SUPPORT",
+    "set_color",
     "print_color",
     "get_deeptracer_root",
     "DEEPTRACER_ROOT",
