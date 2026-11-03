@@ -60,6 +60,16 @@ def test_suggestions_differ_for_distinct_code_samples():
     assert "render_invoice" in beta_labels
 
 
+def test_local_suggestion_diff_is_source_context_not_fabricated_edits():
+    payload = analyze_python_input(source_code=SAMPLE_ALPHA, display_name="alpha.py")
+    diff_rows = payload["suggestions"][0]["diff"]
+
+    assert diff_rows
+    assert all(row[3] == "context" for row in diff_rows)
+    source_lines = SAMPLE_ALPHA.strip("\n").splitlines()
+    assert all(row[2] == source_lines[row[0] - 1] for row in diff_rows)
+
+
 def test_model_backed_chat_grounding_includes_raw_code_and_anchor(monkeypatch):
     captured = {}
 

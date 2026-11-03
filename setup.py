@@ -24,6 +24,7 @@ setup(
     entry_points={
         "console_scripts": [
             "deeptracer=deeptracer.clip:main",
+            "deeptracer-config=deeptracer.config_cli:main",
             "deeptracer-web=deeptracer.server.app:main",
         ]
     },

@@ -3,7 +3,12 @@ from __future__ import annotations
 from langchain_core.prompts import ChatPromptTemplate
 
 from deeptracer.agents.schemas import RefactorAgentResult
-from deeptracer.agents.utils import JSON_OUTPUT_INSTRUCTION, invoke_structured_or_fallback, to_json_text
+from deeptracer.agents.utils import (
+    JSON_OUTPUT_INSTRUCTION,
+    agent_fallback,
+    invoke_structured_or_fallback,
+    to_json_text,
+)
 from deeptracer.modeling.llm import get_chat_model
 
 
@@ -13,7 +18,7 @@ def run_refactor_agent(code: str, local_analysis: dict, structure: dict, perform
     fallback = {"suggestions": local_suggestions}
 
     if llm is None:
-        return fallback
+        return agent_fallback(fallback, error="model_not_configured")
 
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -22,6 +27,9 @@ def run_refactor_agent(code: str, local_analysis: dict, structure: dict, perform
                 "You propose one to three concrete Python refactor suggestions for beginners. "
                 "Use the structure, performance, and memory findings together. Keep each "
                 "suggestion practical, explainable, and low-drama. "
+                "When building on a local suggestion, copy its exact id to "
+                "based_on_suggestion_id and use only code-anchor ids supplied in the draft. "
+                "Never invent an anchor id. "
                 f"{JSON_OUTPUT_INSTRUCTION}",
             ),
             (

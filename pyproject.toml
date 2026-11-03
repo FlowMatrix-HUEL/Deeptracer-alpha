@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deeptracer"
-
+authors = [{ name = "Ricardo-shuo-liu", email = "13838152117@139.com" }]
 version = "0.1.0"
 
 requires-python = ">=3.10.9"
@@ -37,6 +37,7 @@ include = ["deeptracer*"]
 dev = [
     "pytest>=9.0.2",
     "pytest-cov",
+    "httpx>=0.28.1",
     "flake8",
     "pre-commit",
     "black==24.1.0",
@@ -46,4 +47,5 @@ dev = [
 # 设置终端输入映射
 [project.scripts]
 deeptracer = "deeptracer.clip:main"
+deeptracer-config = "deeptracer.config_cli:main"
 deeptracer-web = "deeptracer.server.app:main"

@@ -73,7 +73,7 @@ def _extract_code_anchors(source_code: str) -> list[dict[str, Any]]:
     except SyntaxError:
         return anchors
 
-    seen: set[tuple[str, str, int | None]] = set()
+    seen: set[Any] = set()
 
     def add_anchor(kind: str, label: str, line: int | None) -> None:
         key = (kind, label, line)
@@ -82,6 +82,7 @@ def _extract_code_anchors(source_code: str) -> list[dict[str, Any]]:
         seen.add(key)
         anchors.append(
             {
+                "id": f"{kind}:{label}:{line or ''}",
                 "kind": kind,
                 "label": label,
                 "line": line,
@@ -118,7 +119,10 @@ def build_grounding_bundle(
     merged_anchors = []
     seen: set[tuple[str, str, int | None]] = set()
     for anchor in suggestion_anchors + code_anchors:
-        key = (anchor.get("kind"), anchor.get("label"), anchor.get("line"))
+        key = (
+            anchor.get("id")
+            or (anchor.get("kind"), anchor.get("label"), anchor.get("line"))
+        )
         if key in seen:
             continue
         seen.add(key)

@@ -3,7 +3,12 @@ from __future__ import annotations
 from langchain_core.prompts import ChatPromptTemplate
 
 from deeptracer.agents.schemas import TeachingAgentResult
-from deeptracer.agents.utils import JSON_OUTPUT_INSTRUCTION, invoke_structured_or_fallback, to_json_text
+from deeptracer.agents.utils import (
+    JSON_OUTPUT_INSTRUCTION,
+    agent_fallback,
+    invoke_structured_or_fallback,
+    to_json_text,
+)
 from deeptracer.modeling.llm import get_chat_model
 
 
@@ -11,13 +16,13 @@ def run_teaching_agent(code: str, structure: dict, performance: dict, memory: di
     llm = get_chat_model(optional=True)
     focus = structure.get("focus_function", "the current code")
     fallback = {
-        "overview": f"Start by reading {focus} and understanding its job before deciding whether to optimize it.",
-        "beginner_tip": "If a block of code feels hard to read, clarify each function's responsibility first.",
-        "next_step": "Open the first suggestion and check why it was recommended.",
+        "overview": f"先阅读 {focus}，理解它的职责和输入参数，再决定是否需要优化。",
+        "beginner_tip": "如果一段代码难以阅读，先确认每个函数的职责和参数是否清楚。",
+        "next_step": "打开第一条建议，确认它为什么会被推荐，再从最小改动开始。",
     }
 
     if llm is None:
-        return fallback
+        return agent_fallback(fallback, error="model_not_configured")
 
     prompt = ChatPromptTemplate.from_messages(
         [

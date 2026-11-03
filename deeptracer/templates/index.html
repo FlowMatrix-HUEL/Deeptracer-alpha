@@ -14,7 +14,10 @@
             <div class="nav-tabs">
                 <button class="nav-tab" data-page="home">首页</button>
                 <button class="nav-tab is-active" data-page="code">代码</button>
-                <button class="nav-tab" data-page="analysis">分析结果</button>
+                <button class="nav-tab" data-page="analysis">分析工作台</button>
+                <a class="nav-doc-link" href="/api-docs" target="_blank" rel="noopener">
+                    API 文档 <span aria-hidden="true">↗</span>
+                </a>
             </div>
             <button class="nav-button" id="themeToggle" type="button">
                 <span class="icon">🌓</span>
@@ -71,18 +74,27 @@
             <div class="code-layout">
                 <!-- 左侧代码区域 -->
                 <div class="code-panel" id="codePanel">
-                    <div class="panel-header">
-                        <h2>源代码</h2>
-                        <div class="panel-actions">
-                            <button class="action-button small primary" id="runAnalysis">分析代码</button>
-                            <button class="action-button small" id="editCode" hidden>✏️ 编辑</button>
-                            <button class="action-button small success" id="saveEdit" hidden>💾 保存</button>
-                            <button class="action-button small" id="cancelEdit" hidden>❌ 取消</button>
-                            <button class="action-button small" id="copyCode" title="复制代码">📋</button>
-                            <button class="icon-button" id="clearCode" title="清空">🗑️</button>
-                            <button class="icon-button" id="reloadFile" title="重新加载">🔄</button>
+                    <div class="source-header">
+                        <div class="source-summary-title">
+                            <span class="analysis-eyebrow">Source Code</span>
+                            <strong>源代码</strong>
                         </div>
                     </div>
+
+                    <div class="source-toolbar">
+                        <div class="source-toolbar-main">
+                            <button class="action-button small" id="runAnalysis" type="button">分析代码</button>
+                            <button class="action-button small" id="editCode" type="button" hidden>编辑</button>
+                            <button class="action-button small" id="saveEdit" type="button" hidden>保存</button>
+                            <button class="action-button small" id="cancelEdit" type="button" hidden>取消</button>
+                        </div>
+                        <div class="source-toolbar-utility">
+                            <button class="action-button small" id="copyCode" type="button" title="复制代码">复制</button>
+                            <button class="action-button small" id="reloadFile" type="button" title="重新加载">重载</button>
+                            <button class="action-button small" id="clearCode" type="button" title="清空代码">清空</button>
+                        </div>
+                    </div>
+
                     <div class="editor-box">
                         <div class="line-numbers" id="lineNumbers">1</div>
                         <textarea id="sourceCode" spellcheck="false" placeholder="Python 代码..." readonly></textarea>
@@ -102,16 +114,117 @@
 
                 <!-- 右侧执行流程区域 -->
                 <div class="flow-panel" id="flowPanel">
-                    <div class="panel-header">
-                        <h2>执行流程</h2>
-                        <button class="action-button small" id="syncTutor">刷新</button>
-                    </div>
-                    <div class="tutor-stage">
-                        <div class="tutor-placeholder" id="tutorPlaceholder">
-                            <div class="placeholder-icon">🎯</div>
-                            <p>点击"刷新"查看执行流程</p>
+                    <div class="panel-header execution-panel-header">
+                        <div>
+                            <h2>运行观察</h2>
+                            <p class="panel-subtitle">查看逐步执行，或追踪指定函数调用。</p>
                         </div>
-                        <div class="tutor-visualizer" id="tutorVisualizerMount" hidden></div>
+                        <button class="action-button small" id="syncTutor">生成执行流程</button>
+                    </div>
+
+                    <div class="execution-mode-tabs" id="executionModeTabs" role="tablist" aria-label="运行观察模式">
+                        <button class="execution-mode-tab is-active" data-execution-mode="tutor" role="tab" aria-selected="true">
+                            <span>Python Tutor</span>
+                            <small>变量与执行步骤</small>
+                        </button>
+                        <button class="execution-mode-tab" data-execution-mode="tracer" role="tab" aria-selected="false">
+                            <span>Tracer 调用追踪</span>
+                            <small>函数调用树与耗时</small>
+                        </button>
+                        <button class="execution-mode-tab" data-execution-mode="terminal" role="tab" aria-selected="false">
+                            <span>运行终端</span>
+                            <small>执行代码并查看输出</small>
+                        </button>
+                    </div>
+
+                    <div class="execution-view" id="tutorExecutionView" data-execution-view="tutor">
+                        <div class="tutor-stage">
+                            <div class="tutor-placeholder" id="tutorPlaceholder">
+                                <div class="placeholder-icon">🎯</div>
+                                <p>点击“生成执行流程”查看逐步执行。此操作会再次运行代码。</p>
+                            </div>
+                            <div class="tutor-visualizer" id="tutorVisualizerMount" hidden></div>
+                        </div>
+                    </div>
+
+                    <div class="execution-view tracer-execution-view" id="tracerExecutionView" data-execution-view="tracer" hidden>
+                        <div class="tracer-layout">
+                            <section class="tracer-controls">
+                                <details class="section-disclosure" open>
+                                    <summary class="disclosure-summary tracer-control-heading">
+                                        <span>
+                                            <span class="analysis-eyebrow">Trace Targets</span>
+                                            <strong>选择追踪函数</strong>
+                                        </span>
+                                        <span class="disclosure-chevron" aria-hidden="true"></span>
+                                    </summary>
+                                    <div class="trace-function-list" id="traceFunctionList">
+                                        <p class="trace-empty">分析代码后，这里会列出可追踪函数。</p>
+                                    </div>
+                                    <div class="tracer-option-grid">
+                                        <label class="tracer-option">
+                                            <input type="checkbox" id="traceTime" checked>
+                                            <span>耗时统计</span>
+                                        </label>
+                                        <label class="tracer-option">
+                                            <input type="checkbox" id="traceColor" checked>
+                                            <span>终端彩色输出</span>
+                                        </label>
+                                        <label class="tracer-option">
+                                            <input type="checkbox" id="traceExceptions">
+                                            <span>异常追踪</span>
+                                        </label>
+                                        <label class="tracer-option">
+                                            <input type="checkbox" id="traceLocals" disabled>
+                                            <span>异常时记录局部变量</span>
+                                        </label>
+                                    </div>
+                                    <button class="action-button primary tracer-run-button" id="runTracerTrace" type="button">
+                                        开始调用追踪
+                                    </button>
+                                    <p class="tracer-note">追踪会重新运行当前代码。Tracer 按函数名匹配，同名函数会一起追踪；交互式调试开关在 Web 模式中不会启用。</p>
+                                </details>
+                            </section>
+
+                            <section class="tracer-results">
+                                <div class="tracer-result-toolbar">
+                                    <div class="trace-view-tabs" id="traceViewTabs" role="tablist" aria-label="追踪结果视图">
+                                        <button class="trace-view-tab is-active" data-trace-view="tree" role="tab" aria-selected="true">调用结构</button>
+                                        <button class="trace-view-tab" data-trace-view="terminal" role="tab" aria-selected="false">终端输出</button>
+                                    </div>
+                                    <div class="trace-toolbar-actions">
+                                        <span class="trace-status" id="traceStatus">等待选择函数并运行追踪。</span>
+                                        <button class="text-button" id="expandTraceTree" type="button">展开全部</button>
+                                        <button class="text-button" id="collapseTraceTree" type="button">收起全部</button>
+                                    </div>
+                                </div>
+                                <div class="trace-result-pane" id="traceTreeView">
+                                    <div class="trace-empty">
+                                        <strong>调用树会显示在这里</strong>
+                                        <p>选择函数后运行，可查看参数、返回值和嵌套调用关系。</p>
+                                    </div>
+                                </div>
+                                <div class="trace-result-pane" id="traceTerminalView" hidden>
+                                    <pre class="trace-terminal" id="traceTerminalOutput"></pre>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="execution-view terminal-execution-view" id="terminalExecutionView" data-execution-view="terminal" hidden>
+                        <div class="terminal-view-toolbar">
+                            <div>
+                                <span class="analysis-eyebrow">Python Runtime</span>
+                                <h3>运行当前代码</h3>
+                                <p>独立子进程执行，仅显示 stdout、stderr 和异常信息。</p>
+                            </div>
+                            <button class="action-button small primary" id="runTerminalCode" type="button">运行代码</button>
+                        </div>
+                        <div class="terminal-view-status">
+                            <span id="terminalRunStatus">等待运行。</span>
+                            <span id="terminalRunDuration"></span>
+                        </div>
+                        <pre class="run-terminal-output" id="terminalRunOutput">点击“运行代码”查看程序输出。</pre>
                     </div>
                 </div>
             </div>
@@ -121,67 +234,124 @@
     <!-- 分析结果页面 -->
     <main class="page page-analysis" id="pageAnalysis">
         <div class="analysis-layout">
-            <div class="runtime-banner" id="runtimeBanner" hidden></div>
+            <header class="analysis-heading">
+                <div>
+                    <p class="analysis-eyebrow">DeepTracer Workspace</p>
+                    <h1>代码分析工作台</h1>
+                    <p>在分析、可视化与答疑之间切换，一次专注一个任务。</p>
+                </div>
+                <div class="analysis-heading-actions">
+                    <button class="action-button small" id="backToCode" type="button">← 返回代码</button>
+                    <button class="action-button small primary" id="openTracer" type="button">追踪函数调用</button>
+                </div>
+            </header>
 
-            <!-- 顶部指标卡片 -->
-            <div class="metrics-grid" id="summaryCards"></div>
+            <nav class="workspace-tabs" id="workspaceTabs" role="tablist" aria-label="分析工作区">
+                <button class="workspace-tab is-active" data-workspace="analysis" role="tab" aria-selected="true">
+                    <span>分析</span>
+                    <small>概览、结构与建议</small>
+                </button>
+                <button class="workspace-tab" data-workspace="visualization" role="tab" aria-selected="false">
+                    <span>AST 可视化</span>
+                    <small>语法树与性能视图</small>
+                </button>
+                <button class="workspace-tab" data-workspace="chat" role="tab" aria-selected="false">
+                    <span>AI 答疑</span>
+                    <small>围绕当前代码追问</small>
+                </button>
+            </nav>
 
-            <!-- 分析标签页 -->
-            <div class="tabs-container">
-                <div class="tab-row" id="resultTabs">
-                    <button class="tab-btn is-active" data-tab="workflow">概览</button>
-                    <button class="tab-btn" data-tab="ast">结构</button>
-                    <button class="tab-btn" data-tab="performance">性能</button>
-                    <button class="tab-btn" data-tab="memory">内存</button>
+            <section class="workspace-panel" data-workspace-panel="analysis" role="tabpanel">
+                <div class="analysis-context">
+                    <div class="runtime-banner" id="runtimeBanner" hidden></div>
+                    <div class="metrics-grid" id="summaryCards"></div>
                 </div>
 
-                <div class="tab-content">
-                    <div class="lead-card" id="tabSummary"></div>
-                    <div class="chart-card" id="tabBars"></div>
-                    <div class="notes-card" id="tabPoints"></div>
-                </div>
-            </div>
+                <div class="analysis-columns">
+                    <div class="analysis-main">
+                        <details class="section-disclosure" open>
+                            <summary class="disclosure-summary panel-section-heading">
+                                <span>
+                                    <span class="analysis-eyebrow">Analysis</span>
+                                    <strong>结果详情</strong>
+                                </span>
+                                <span class="disclosure-chevron" aria-hidden="true"></span>
+                            </summary>
+                            <div class="tabs-container">
+                                <div class="tab-row" id="resultTabs">
+                                    <button class="tab-btn is-active" data-tab="workflow">概览</button>
+                                    <button class="tab-btn" data-tab="ast">结构</button>
+                                    <button class="tab-btn" data-tab="performance">性能</button>
+                                    <button class="tab-btn" data-tab="memory">内存</button>
+                                </div>
 
-            <!-- 可视化区域 -->
-            <div class="visualizations-section">
-                <div class="section-header">
-                    <h2>可视化分析</h2>
-                    <div class="viz-tabs" id="vizTabs">
-                        <button class="viz-tab is-active" data-viz="ast">AST 语法树</button>
-                        <button class="viz-tab" data-viz="performance">性能火焰图</button>
+                                <div class="tab-content">
+                                    <div class="lead-card" id="tabSummary"></div>
+                                    <div class="chart-card" id="tabBars"></div>
+                                    <div class="notes-card" id="tabPoints"></div>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    <aside class="suggestions-section">
+                        <details class="section-disclosure" open>
+                            <summary class="disclosure-summary panel-section-heading">
+                                <span>
+                                    <span class="analysis-eyebrow">Next Steps</span>
+                                    <strong>优化建议</strong>
+                                </span>
+                                <span class="disclosure-chevron" aria-hidden="true"></span>
+                            </summary>
+                            <div class="suggestion-list" id="suggestionList"></div>
+                            <div class="suggestion-detail" id="suggestionDetail"></div>
+                        </details>
+                    </aside>
+                </div>
+            </section>
+
+            <section class="workspace-panel" data-workspace-panel="visualization" role="tabpanel" hidden>
+                <div class="visualizations-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="analysis-eyebrow">Visualization</p>
+                            <h2>代码可视化</h2>
+                        </div>
+                        <div class="viz-tabs" id="vizTabs">
+                            <button class="viz-tab is-active" data-viz="ast">AST 语法树</button>
+                            <button class="viz-tab" data-viz="performance">性能火焰图</button>
+                        </div>
+                    </div>
+                    <div class="viz-container" id="vizContainer">
+                        <div class="viz-content" id="astVizContent"></div>
+                        <div class="viz-content" id="perfVizContent" hidden></div>
                     </div>
                 </div>
-                <div class="viz-container" id="vizContainer">
-                    <div class="viz-content" id="astVizContent"></div>
-                    <div class="viz-content" id="perfVizContent" hidden></div>
-                </div>
-            </div>
+            </section>
 
-            <!-- 建议区域 -->
-            <div class="suggestions-section">
-                <h2>优化建议</h2>
-                <div class="suggestion-list" id="suggestionList"></div>
-                <div class="suggestion-detail" id="suggestionDetail"></div>
-            </div>
-
-            <div class="chat-section">
-                <div class="section-header">
-                    <h2>开放式答疑</h2>
-                    <button class="action-button small" id="chatStop" type="button" hidden>停止</button>
-                </div>
-                <div class="chat-shell">
-                    <div class="chat-status" id="chatStatus">分析完成后，可以继续追问这段代码为什么这样写、哪里更值得先看、下一步应该怎么改。</div>
-                    <div class="chat-transcript" id="chatTranscript">
-                        <div class="chat-empty">这里会保留你基于当前代码的追问记录。</div>
+            <section class="workspace-panel" data-workspace-panel="chat" role="tabpanel" hidden>
+                <div class="chat-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="analysis-eyebrow">AI Tutor</p>
+                            <h2>围绕当前代码继续追问</h2>
+                        </div>
+                        <button class="action-button small" id="chatStop" type="button" hidden>停止</button>
                     </div>
-                    <div class="chat-compose">
-                        <textarea id="chatInput" rows="3" placeholder="继续追问，例如：为什么这里会成为热点？"></textarea>
-                        <div class="chat-actions">
-                            <button class="action-button small primary" id="chatSend" type="button">发送</button>
+                    <div class="chat-shell">
+                        <div class="chat-status" id="chatStatus">分析完成后，可以继续追问这段代码为什么这样写、哪里更值得先看、下一步应该怎么改。</div>
+                        <div class="chat-transcript" id="chatTranscript">
+                            <div class="chat-empty">这里会保留你基于当前代码的追问记录。</div>
+                        </div>
+                        <div class="chat-compose">
+                            <textarea id="chatInput" rows="3" placeholder="继续追问，例如：为什么这里会成为热点？"></textarea>
+                            <div class="chat-actions">
+                                <button class="action-button small primary" id="chatSend" type="button">发送</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 

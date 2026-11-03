@@ -110,8 +110,7 @@ def set_color(s: str, color: str) -> str:
             return s
     return s  # pragma: no cover
 
-def print_color(text:str,
-                color:str)->None:
+def print_color(text: str, color: str | None = None, **kwargs) -> None:
     """
     带颜色打印函数
     Args:
@@ -124,7 +123,8 @@ def print_color(text:str,
     "本函数只支持 linux,macos,部分window 使用"
     """
 
-    print(set_color(s=text,color=color))
+    selected_color = color or kwargs.get("fore_color") or "white"
+    print(set_color(s=text, color=selected_color))
 def get_deeptracer_root():
     """
     获取deeptracer库的绝对根路径
@@ -151,5 +151,15 @@ __all__ = [
     "print_color",
     "get_deeptracer_root",
     "DEEPTRACER_ROOT",
-    "DEEPTRACER_DEV_ROOT"
+    "DEEPTRACER_DEV_ROOT",
+    "Tracer",
+    "tracer",
 ]
+
+
+def __getattr__(name: str):
+    if name in {"Tracer", "tracer"}:
+        from deeptracer.tracing import Tracer, tracer
+
+        return {"Tracer": Tracer, "tracer": tracer}[name]
+    raise AttributeError(name)

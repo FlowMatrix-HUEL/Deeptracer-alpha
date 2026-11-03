@@ -30,6 +30,14 @@ class SuggestionItem(BaseModel):
     note: str = Field(description="One-line note shown in the list.")
     explanation: str = Field(description="Longer explanation for the detail panel.")
     diff: list[list] = Field(description="Diff preview rows as [line, marker, text, kind].")
+    based_on_suggestion_id: str = Field(
+        default="",
+        description="Exact local suggestion id this item is based on, if applicable.",
+    )
+    anchor_ids: list[str] = Field(
+        default_factory=list,
+        description="Exact local code-anchor ids relevant to this suggestion.",
+    )
 
 
 class RefactorAgentResult(BaseModel):

@@ -3,7 +3,12 @@ from __future__ import annotations
 from langchain_core.prompts import ChatPromptTemplate
 
 from deeptracer.agents.schemas import MemoryAgentResult
-from deeptracer.agents.utils import JSON_OUTPUT_INSTRUCTION, invoke_structured_or_fallback, to_json_text
+from deeptracer.agents.utils import (
+    JSON_OUTPUT_INSTRUCTION,
+    agent_fallback,
+    invoke_structured_or_fallback,
+    to_json_text,
+)
 from deeptracer.modeling.llm import get_chat_model
 
 
@@ -17,7 +22,7 @@ def run_memory_agent(code: str, local_analysis: dict) -> dict:
     }
 
     if llm is None:
-        return fallback
+        return agent_fallback(fallback, error="model_not_configured")
 
     prompt = ChatPromptTemplate.from_messages(
         [

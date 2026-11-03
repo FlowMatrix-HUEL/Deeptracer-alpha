@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 import ast
-import cProfile
-import io
+import json
 import os
-import pstats
+import signal
+import subprocess
 import sys
 import tempfile
-import tracemalloc
 from collections import Counter
-from contextlib import redirect_stderr, redirect_stdout
+from html import escape as html_escape
 from pathlib import Path
-from time import perf_counter
 
 from deeptracer.astAnalyer.viztracer import AstAnalyer
-from deeptracer.speedAnalyer.viztracer import SpeedAnalyzer
+from deeptracer.astAnalyer.signatures import (
+    collect_parameters,
+    format_function_signature,
+    unparse,
+)
+from deeptracer.tracer_support import get_tracer_python_path
 
 
 CONTROL_NODES = (
@@ -101,7 +104,7 @@ def _build_report(code: str, execution_path: Path, display_name: str) -> dict:
     ast_visualization_html = _generate_ast_visualization(code, display_name)
     
     # 生成性能分析 HTML
-    perf_visualization_html = _generate_perf_visualization(code, execution_path)
+    perf_visualization_html = _generate_perf_visualization(runtime, display_name)
 
     most_complex = functions[0]["name"] if functions else "未发现函数"
     return {
@@ -132,6 +135,7 @@ def _build_report(code: str, execution_path: Path, display_name: str) -> dict:
             "targetPath": display_name,
             "stdout": runtime["stdout"][:800],
             "runtimeError": runtime["error"],
+            "pyinstrumentSamples": runtime.get("pyinstrument_sample_count", 0),
         },
     }
 
@@ -148,22 +152,72 @@ def _resolve_python_path(path_text: str) -> Path:
 
 
 def _collect_functions(tree: ast.AST) -> list[dict]:
-    functions = []
-    for node in ast.walk(tree):
+    functions: list[dict] = []
+
+    def visit(node: ast.AST, scope: tuple[str, ...]) -> None:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            complexity = 1 + sum(1 for item in ast.walk(node) if isinstance(item, CONTROL_NODES))
             end_lineno = getattr(node, "end_lineno", node.lineno)
+            qualified_name = ".".join((*scope, node.name))
             functions.append(
                 {
                     "name": node.name,
+                    "qualified_name": qualified_name,
+                    "scope": ".".join(scope) or None,
+                    "signature": format_function_signature(node),
+                    "parameters": collect_parameters(node),
+                    "decorators": [unparse(item) for item in node.decorator_list],
+                    "returns": unparse(node.returns) or None,
+                    "is_async": isinstance(node, ast.AsyncFunctionDef),
                     "lineno": node.lineno,
                     "end_lineno": end_lineno,
                     "line_span": max(1, end_lineno - node.lineno + 1),
-                    "complexity": complexity,
+                    "complexity": _function_complexity(node),
                 }
             )
+            for child in node.body:
+                visit(child, (*scope, node.name))
+            return
+
+        if isinstance(node, ast.ClassDef):
+            for child in node.body:
+                visit(child, (*scope, node.name))
+            return
+
+        for child in ast.iter_child_nodes(node):
+            visit(child, scope)
+
+    visit(tree, ())
     functions.sort(key=lambda item: (item["complexity"], item["line_span"]), reverse=True)
     return functions
+
+
+def _function_complexity(
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> int:
+    complexity = 1
+
+    def visit(current: ast.AST) -> None:
+        nonlocal complexity
+        for child in ast.iter_child_nodes(current):
+            if isinstance(
+                child,
+                (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda),
+            ):
+                continue
+            if isinstance(child, CONTROL_NODES):
+                complexity += 1
+            visit(child)
+
+    for child in node.body:
+        if isinstance(
+            child,
+            (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda),
+        ):
+            continue
+        if isinstance(child, CONTROL_NODES):
+            complexity += 1
+        visit(child)
+    return complexity
 
 
 def _collect_loop_calls(tree: ast.AST) -> list[dict]:
@@ -212,11 +266,27 @@ def _build_snippet(source_lines: list[str], line: int | None, radius: int = 1) -
 
 def _anchor(kind: str, label: str, line: int | None, source_lines: list[str]) -> dict:
     return {
+        "id": f"{kind}:{label}:{line or ''}",
         "kind": kind,
         "label": label,
         "line": line,
         "snippet": _build_snippet(source_lines, line),
     }
+
+
+def _context_diff(
+    source_lines: list[str],
+    line: int | None,
+    radius: int = 2,
+) -> list[list]:
+    if not line:
+        return []
+    start = max(1, line - radius)
+    end = min(len(source_lines), line + radius)
+    return [
+        [current, " ", source_lines[current - 1], "context"]
+        for current in range(start, end + 1)
+    ]
 
 
 def _find_enclosing_function(functions: list[dict], line: int | None) -> dict | None:
@@ -231,107 +301,97 @@ def _find_enclosing_function(functions: list[dict], line: int | None) -> dict | 
 
 
 def _profile_script(path: Path, code: str) -> dict:
-    profiler = cProfile.Profile()
-    stdout_buffer = io.StringIO()
-    cwd = os.getcwd()
-    peak_bytes = 0
-    duration_ms = 0.0
-    profile_rows = []
-    memory_rows = []
-    error_message = None
+    del code  # The worker reads the file so it shares the exact analyzed source.
+    timeout_seconds = float(os.getenv("DEEPTRACER_EXECUTION_TIMEOUT_SECONDS", "5"))
+    command = [
+        sys.executable,
+        "-m",
+        "deeptracer.server.execution_worker",
+        str(path),
+    ]
+    environment = os.environ.copy()
+    project_root = str(Path(__file__).resolve().parents[2])
+    existing_python_path = environment.get("PYTHONPATH")
+    python_paths = [
+        project_root,
+        get_tracer_python_path(),
+        existing_python_path,
+    ]
+    environment["PYTHONPATH"] = os.pathsep.join(
+        item for item in python_paths if item
+    )
+    environment["PYTHONIOENCODING"] = "utf-8"
 
-    globals_dict = {
-        "__file__": str(path),
-        "__name__": "__main__",
-        "__package__": None,
-        "__cached__": None,
-    }
-
+    process = subprocess.Popen(
+        command,
+        cwd=str(path.parent),
+        env=environment,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        start_new_session=os.name == "posix",
+    )
     try:
-        sys.path.insert(0, str(path.parent))
-        os.chdir(path.parent)
-        compiled = compile(code, str(path), "exec")
-        tracemalloc.start()
-        start = perf_counter()
-        with redirect_stdout(stdout_buffer), redirect_stderr(stdout_buffer):
-            profiler.enable()
-            exec(compiled, globals_dict)
-            profiler.disable()
-        duration_ms = (perf_counter() - start) * 1000
-        _, peak_bytes = tracemalloc.get_traced_memory()
-        snapshot = tracemalloc.take_snapshot()
-        profile_rows = _profile_rows(profiler, path)
-        memory_rows = _memory_rows(snapshot, peak_bytes, path)
-    except Exception as exc:
-        profiler.disable()
-        duration_ms = (perf_counter() - start) * 1000 if "start" in locals() else 0.0
-        error_message = f"{type(exc).__name__}: {exc}"
-        if tracemalloc.is_tracing():
-            _, peak_bytes = tracemalloc.get_traced_memory()
-            snapshot = tracemalloc.take_snapshot()
-            memory_rows = _memory_rows(snapshot, peak_bytes, path)
-        profile_rows = _profile_rows(profiler, path)
-    finally:
-        if tracemalloc.is_tracing():
-            tracemalloc.stop()
-        if sys.path and sys.path[0] == str(path.parent):
-            sys.path.pop(0)
-        os.chdir(cwd)
+        stdout, stderr = process.communicate(timeout=max(0.1, timeout_seconds))
+    except subprocess.TimeoutExpired:
+        _terminate_process_tree(process)
+        stdout, stderr = process.communicate()
+        return _empty_runtime(
+            f"执行超时：代码运行超过 {timeout_seconds:g} 秒，已终止独立分析进程。"
+        )
 
+    if process.returncode != 0:
+        detail = (stderr or stdout or "").strip()
+        return _empty_runtime(
+            "用户代码进程异常退出"
+            + (f"：{detail[-800:]}" if detail else f"（退出码 {process.returncode}）")
+        )
+    try:
+        payload = json.loads(stdout)
+    except json.JSONDecodeError:
+        return _empty_runtime(
+            "分析进程没有返回有效结果"
+            + (f"：{(stderr or stdout).strip()[-800:]}" if stderr or stdout else "")
+        )
+    if not isinstance(payload, dict):
+        return _empty_runtime("分析进程返回了无效结果。")
     return {
-        "duration_ms": duration_ms,
-        "peak_mb": peak_bytes / (1024 * 1024) if peak_bytes else 0.0,
-        "profile_rows": profile_rows,
-        "memory_rows": memory_rows,
-        "stdout": stdout_buffer.getvalue(),
-        "error": error_message,
+        "duration_ms": float(payload.get("duration_ms") or 0.0),
+        "peak_mb": float(payload.get("peak_mb") or 0.0),
+        "profile_rows": payload.get("profile_rows") or [],
+        "memory_rows": payload.get("memory_rows") or [],
+        "pyinstrument_html": str(payload.get("pyinstrument_html") or ""),
+        "pyinstrument_sample_count": int(
+            payload.get("pyinstrument_sample_count") or 0
+        ),
+        "stdout": str(payload.get("stdout") or ""),
+        "error": payload.get("error"),
     }
 
 
-def _profile_rows(profiler: cProfile.Profile, path: Path) -> list[dict]:
-    stats = pstats.Stats(profiler)
-    rows = []
-    for (filename, lineno, name), values in stats.stats.items():
-        if not filename:
-            continue
-        try:
-            same_file = Path(filename).resolve() == path.resolve()
-        except OSError:
-            same_file = False
-        if not same_file:
-            continue
-        cc, nc, tt, ct, _ = values
-        rows.append(
-            {
-                "label": name,
-                "line": lineno,
-                "calls": nc or cc,
-                "total_ms": ct * 1000,
-                "self_ms": tt * 1000,
-            }
-        )
-    rows.sort(key=lambda item: item["total_ms"], reverse=True)
-    return rows[:5]
+def _terminate_process_tree(process: subprocess.Popen) -> None:
+    try:
+        if os.name == "posix":
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+        else:
+            process.kill()
+    except (OSError, ProcessLookupError):
+        pass
 
 
-def _memory_rows(snapshot: tracemalloc.Snapshot, peak_bytes: float, path: Path) -> list[dict]:
-    rows = []
-    for stat in snapshot.statistics("lineno")[:6]:
-        frame = stat.traceback[0]
-        try:
-            same_file = Path(frame.filename).resolve() == path.resolve()
-        except OSError:
-            same_file = False
-        if not same_file:
-            continue
-        rows.append(
-            {
-                "label": f"第 {frame.lineno} 行",
-                "value": round((stat.size / peak_bytes * 100) if peak_bytes else 0.0, 1),
-                "size_kb": round(stat.size / 1024, 1),
-            }
-        )
-    return rows[:4]
+def _empty_runtime(error: str | None = None) -> dict:
+    return {
+        "duration_ms": 0.0,
+        "peak_mb": 0.0,
+        "profile_rows": [],
+        "memory_rows": [],
+        "pyinstrument_html": "",
+        "pyinstrument_sample_count": 0,
+        "stdout": "",
+        "error": error,
+    }
 
 
 def _build_overview_tab(runtime: dict, display_name: str, top_nodes: list[tuple[str, int]]) -> dict:
@@ -373,6 +433,7 @@ def _build_ast_tab(functions: list[dict], print_calls: int, source_lines: list[s
             {"label": "重点函数", "value": top_function},
         ],
         "bars": bars,
+        "functions": sorted(functions, key=lambda item: item["lineno"]),
         "points": [
             "函数越长、分支越多，后续维护通常越吃力。",
             f"当前最值得先读懂的是：{top_function}。",
@@ -468,13 +529,7 @@ def _build_suggestions(
                     "nextChange": "先把这个函数拆成职责更单一的小步骤，再重新跑一轮分析确认复杂度和热点是否下降。",
                     "mode": "local-anchored",
                 },
-                "diff": [
-                    [target["lineno"], " ", f"def {target['name']}(...) :", "context"],
-                    [target["lineno"] + 1, "-", "    # mixed logic", "remove"],
-                    [target["lineno"] + 1, "+", "    data = prepare_data(...)", "add"],
-                    [target["lineno"] + 2, "+", "    result = compute_result(data)", "add"],
-                    [target["lineno"] + 3, "+", "    return result", "add"],
-                ],
+                "diff": _context_diff(source_lines, target["lineno"], radius=3),
             }
         )
 
@@ -507,11 +562,7 @@ def _build_suggestions(
                     "nextChange": "先确认这次调用是否每轮都必须重新执行；如果输入没变，优先考虑缓存中间结果或提前搬出循环。",
                     "mode": "local-anchored",
                 },
-                "diff": [
-                    [loop_target["line"], " ", "for item in items:", "context"],
-                    [loop_target["line"] + 1, "-", f"    value = {loop_target['name']}(item)", "remove"],
-                    [loop_target["line"] + 1, "+", "    # think about whether this can be simplified", "add"],
-                ],
+                "diff": _context_diff(source_lines, loop_target["line"]),
             }
         )
 
@@ -539,12 +590,7 @@ def _build_suggestions(
                     "nextChange": "先把临时输出收进条件分支、日志开关或局部调试块，再看运行结果是否更容易阅读。",
                     "mode": "local-anchored",
                 },
-                "diff": [
-                    [1, " ", "DEBUG = True", "context"],
-                    [2, "-", "print('debug info')", "remove"],
-                    [2, "+", "if DEBUG:", "add"],
-                    [3, "+", "    print('debug info')", "add"],
-                ],
+                "diff": _context_diff(source_lines, print_line),
             }
         )
 
@@ -575,12 +621,7 @@ def _build_suggestions(
                     "nextChange": "先确认大列表、大字典是否真的需要一直保留；如果只是中间产物，优先缩短作用域或改成分步处理。",
                     "mode": "local-anchored",
                 },
-                "diff": [
-                    [1, " ", "large_data = build_large_data()", "context"],
-                    [2, "-", "result = process(large_data)", "remove"],
-                    [2, "+", "result = process_in_small_steps()", "add"],
-                    [3, "+", "del large_data", "add"],
-                ],
+                "diff": _context_diff(source_lines, memory_line),
             }
         )
 
@@ -608,10 +649,7 @@ def _build_suggestions(
                     "nextChange": "先给主要函数和关键变量补上更清晰的命名或注释，再重新看是否还需要进一步优化。",
                     "mode": "local-anchored",
                 },
-                "diff": [
-                    [1, " ", "def main(...):", "context"],
-                    [2, "+", "    # explain what this step does", "add"],
-                ],
+                "diff": _context_diff(source_lines, 1),
             }
         )
 
@@ -725,21 +763,67 @@ def _generate_ast_visualization(code: str, display_name: str) -> str:
         return ""
 
 
-def _generate_perf_visualization(code: str, execution_path: Path) -> str:
-    """
-    生成性能分析可视化 HTML
-    
-    Args:
-        code: Python 代码字符串
-        execution_path: 执行文件路径
-    
-    Returns:
-        性能分析可视化的 HTML 字符串
-    """
-    try:
-        analyzer = SpeedAnalyzer()
-        html_content = analyzer.generate_perf_report(str(execution_path))
-        return html_content or ""
-    except Exception as e:
-        print(f"性能分析可视化生成失败：{e}")
-        return ""
+def _generate_perf_visualization(runtime: dict, display_name: str) -> str:
+    pyinstrument_html = runtime.get("pyinstrument_html")
+    if pyinstrument_html:
+        if not runtime.get("pyinstrument_sample_count"):
+            warning = (
+                "<div style='padding:12px 18px;border-bottom:1px solid #d8dee9;"
+                "background:#fff7d6;color:#5c4813;font-family:sans-serif'>"
+                "代码执行时间过短，PyInstrument 未采集到样本。"
+                "可降低 DEEPTRACER_PYINSTRUMENT_INTERVAL_SECONDS 或增加代码执行时间。"
+                "</div>"
+            )
+            if "<body>" in pyinstrument_html:
+                pyinstrument_html = pyinstrument_html.replace(
+                    "<body>",
+                    f"<body>{warning}",
+                    1,
+                )
+        return pyinstrument_html
+
+    rows = runtime.get("profile_rows") or []
+    total = sum(float(row.get("total_ms") or 0) for row in rows) or 1.0
+    bars = []
+    for row in rows:
+        width = max(0.0, min(100.0, float(row.get("total_ms") or 0) / total * 100))
+        label = f"{row.get('label', 'unknown')} · 第 {row.get('line', '?')} 行"
+        bars.append(
+            "<div class='bar-row'>"
+            f"<div class='bar-label'>{html_escape(str(label))}</div>"
+            f"<div class='bar-track'><span style='width:{width:.1f}%'></span></div>"
+            f"<strong>{float(row.get('total_ms') or 0):.2f} ms</strong>"
+            "</div>"
+        )
+    if not bars:
+        bars.append("<p class='empty'>当前没有可展示的性能热点。</p>")
+    error = runtime.get("error")
+    error_html = (
+        f"<p class='error'>执行信息：{html_escape(str(error))}</p>"
+        if error
+        else ""
+    )
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DeepTracer 性能分析</title>
+<style>
+body {{ margin: 0; padding: 24px; background: #f7f9fc; color: #172033; font-family: sans-serif; }}
+h1 {{ margin: 0 0 8px; font-size: 22px; }}
+.meta {{ color: #667085; margin-bottom: 20px; }}
+.bar-row {{ display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(180px, 3fr) 90px; gap: 14px; align-items: center; margin: 12px 0; }}
+.bar-label {{ overflow-wrap: anywhere; }}
+.bar-track {{ height: 12px; border-radius: 999px; background: #e8edf5; overflow: hidden; }}
+.bar-track span {{ display: block; height: 100%; border-radius: inherit; background: #4f7cff; }}
+.empty, .error {{ padding: 12px; border-radius: 10px; background: #eef2f8; }}
+.error {{ color: #9b2c2c; background: #fff1f1; }}
+</style>
+</head>
+<body>
+<h1>性能热点</h1>
+<div class="meta">{html_escape(display_name)} · 总耗时 {runtime['duration_ms']:.2f} ms</div>
+{''.join(bars)}
+{error_html}
+</body>
+</html>"""

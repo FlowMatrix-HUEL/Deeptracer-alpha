@@ -7,7 +7,7 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -19,6 +19,8 @@ from deeptracer.server.pytutor_service import (
     get_pytutor_static_dir,
     is_pytutor_available,
 )
+from deeptracer.server.run_service import execute_python_code
+from deeptracer.server.tracer_service import execute_tracer_trace
 
 
 HOST = "127.0.0.1"
@@ -51,6 +53,21 @@ def create_app() -> FastAPI:
             return templates.TemplateResponse(request=request, name="index.html")
         except Exception:
             return HTMLResponse(content="<h1>404 - File Not Found</h1>", status_code=404)
+
+    @app.get(
+        "/api-docs",
+        response_class=HTMLResponse,
+        summary="DeepTracer API documentation",
+    )
+    async def api_docs(request: Request):
+        return templates.TemplateResponse(
+            request=request,
+            name="api_docs.html",
+        )
+
+    @app.get("/tracer-api-docs", include_in_schema=False)
+    async def legacy_tracer_api_docs():
+        return RedirectResponse(url="/api-docs", status_code=307)
 
     async def _run_analysis(payload: dict[str, str]):
         target_path = (payload.get("path") or "").strip()
@@ -126,6 +143,50 @@ def create_app() -> FastAPI:
             "available": is_pytutor_available(),
             "embedUrl": "/tutor/iframe-embed.html" if is_pytutor_available() else None,
         }
+
+    @app.post("/api/tracer/trace", summary="Trace selected function calls with Tracer")
+    async def tracer_trace(payload: dict[str, Any]):
+        code = payload.get("code") or ""
+        functions = payload.get("functions") or []
+        options = payload.get("options")
+        if not isinstance(functions, list):
+            raise HTTPException(status_code=400, detail="functions must be a list")
+        if options is not None and not isinstance(options, dict):
+            raise HTTPException(status_code=400, detail="options must be an object")
+        try:
+            return await run_in_threadpool(
+                execute_tracer_trace,
+                source_code=code,
+                functions=[str(item) for item in functions],
+                options=options or {},
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except TimeoutError as exc:
+            raise HTTPException(status_code=504, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Tracer execution failed: {exc}",
+            ) from exc
+
+    @app.post("/api/run", summary="Run Python code and return terminal output")
+    async def run_python(payload: dict[str, Any]):
+        code = payload.get("code") or ""
+        try:
+            return await run_in_threadpool(
+                execute_python_code,
+                source_code=code,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except TimeoutError as exc:
+            raise HTTPException(status_code=504, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Run failed: {exc}",
+            ) from exc
 
     @app.post("/api/tutor/trace", summary="Generate a Python Tutor trace for embedded rendering")
     async def tutor_trace(payload: dict[str, Any]):

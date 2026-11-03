@@ -1,10 +1,16 @@
-from pyvis.network import Network
-import networkx
 import ast
-import os 
-from deeptracer import print_color
+import os
 import uuid
+
+import networkx
+from pyvis.network import Network
+
+from deeptracer import print_color
 from deeptracer.astAnalyer.env_utils import TYPES
+from deeptracer.astAnalyer.signatures import (
+    collect_parameters,
+    format_function_signature,
+)
 
 
 class AstAnalyer:
@@ -87,9 +93,10 @@ class AstAnalyer:
             raise ValueError(f"代码语法错误: {e}")
         return tree
     
-    def _traverse_ast(self, 
-                      node: ast.AST|list|str, 
-                      parent_id: str = None
+    def _traverse_ast(self,
+                      node: ast.AST|list|str,
+                      parent_id: str = None,
+                      edge_label: str = "parent",
                       )->None:
         """
         递归遍历AST 构建图节点和边
@@ -121,16 +128,54 @@ class AstAnalyer:
             size=15  # 节点大小
         )
         if parent_id:
-            self.graph.add_edge(parent_id, node_id, label="parent")
+            self.graph.add_edge(parent_id, node_id, label=edge_label)
+
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            self._add_parameter_nodes(node, node_id)
         
-        for _,field_values in ast.iter_fields(node):
+        for field_name, field_values in ast.iter_fields(node):
             #遍历每一个子节点
             if isinstance(field_values, list):
-                for _, child in enumerate(field_values):
-                    self._traverse_ast(child, node_id)
+                for child in field_values:
+                    self._traverse_ast(child, node_id, edge_label=field_name)
             else:
-                self._traverse_ast(field_values, node_id)
+                self._traverse_ast(field_values, node_id, edge_label=field_name)
                 #如果节点不可迭代直接调度
+
+    def _add_parameter_nodes(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+        function_id: str,
+    ) -> None:
+        for parameter in collect_parameters(node):
+            parameter_id = str(uuid.uuid4())
+            annotation = (
+                f": {parameter['annotation']}" if parameter["annotation"] else ""
+            )
+            default = (
+                f" = {parameter['default']}"
+                if parameter["default"] is not None
+                else ""
+            )
+            label = f"Parameter\n{parameter['name']}{annotation}{default}"
+            self.graph.add_node(
+                parameter_id,
+                label=label,
+                title=(
+                    "type: Parameter\n"
+                    f"name: {parameter['name']}\n"
+                    f"kind: {parameter['kind']}\n"
+                    f"annotation: {parameter['annotation'] or '-'}\n"
+                    f"default: {parameter['default'] or '-'}"
+                ),
+                color=self._get_node_color("Parameter"),
+                size=12,
+            )
+            self.graph.add_edge(
+                function_id,
+                parameter_id,
+                label=parameter["kind"],
+            )
     def _get_node_color(self,
                         node_type: str
                         ) -> str:
@@ -155,7 +200,8 @@ class AstAnalyer:
             'Compare': '#17becf',
             'ClassDef': '#4CAF50',      
             'FunctionDef': '#e377c2',   
-            'AsyncFunctionDef': '#FF9800'
+            'AsyncFunctionDef': '#FF9800',
+            'Parameter': '#9C27B0',
         }
         return color_map.get(node_type,
                              '#000000')  #如果找不到默认为黑色
@@ -176,18 +222,25 @@ class AstAnalyer:
         
         # 提取节点的核心属性
         attrs = {}
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            attrs['name'] = node.name
         if hasattr(node, 'id'):  # 变量名/函数名
             attrs['id'] = node.id
-        if hasattr(node, 'n'):  # 数字常量
-            attrs['value'] = node.n
-        if hasattr(node, 's'):  # 字符串常量
-            attrs['value'] = node.s
+        if isinstance(node, ast.Constant):
+            attrs['value'] = repr(node.value)
+        if isinstance(node, ast.Attribute):
+            attrs['attribute'] = node.attr
         if hasattr(node, 'op'):  # 运算符
             attrs['operator'] = type(node.op).__name__
-        if hasattr(node, 'func') and hasattr(node.func, 'id'):  # 函数调用
-            attrs['function'] = node.func.id
+        if isinstance(node, ast.Call):
+            attrs['function'] = _call_display_name(node.func)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            attrs['signature'] = format_function_signature(node)
         # 拼接节点标签（类型 + 核心属性）
-        label = f"{node_type}\n{attrs}" if attrs else node_type
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            label = f"{node_type}\n{attrs['signature']}"
+        else:
+            label = f"{node_type}\n{attrs}" if attrs else node_type
         return {
             'id': str(uuid.uuid4()),  # 唯一ID
             'type': node_type,
@@ -238,9 +291,15 @@ class AstAnalyer:
         
         # 生成HTML文件
         core_html = net.generate_html()
-        print_color(f"AST可视化已生成",
-                    fore_color="green")
+        print_color("AST可视化已生成", color="green")
         return core_html
+
+
+def _call_display_name(node: ast.AST) -> str:
+    try:
+        return ast.unparse(node)
+    except (AttributeError, TypeError, ValueError):
+        return type(node).__name__
 class CodeStructureAnalyzer(AstAnalyer):
         """
         代码的类与函数的结构可视化 

@@ -49,23 +49,23 @@ class SpeedAnalyzer:
         """
         py_dir = os.path.dirname(py_file_path)
         sys.path.insert(0, py_dir)
+        try:
+            # 读取并执行 py 文件内容
+            with open(py_file_path, "r", encoding="utf-8") as f:
+                py_code = f.read()
 
-        # 读取并执行 py 文件内容
-        with open(py_file_path, "r", encoding="utf-8") as f:
-            py_code = f.read()
-
-        # 构建执行环境
-        exec_globals = {
-            "__file__": py_file_path,
-            "__name__": "__main__",
-            "__package__": None,
-            "__cached__": None,
-        }
-        # 执行代码
-        exec(py_code, exec_globals)
-
-        # 移除临时加入的路径
-        sys.path.pop(0)
+            # 构建执行环境
+            exec_globals = {
+                "__file__": py_file_path,
+                "__name__": "__main__",
+                "__package__": None,
+                "__cached__": None,
+            }
+            exec(py_code, exec_globals)
+        finally:
+            # 移除临时加入的路径
+            if sys.path and sys.path[0] == py_dir:
+                sys.path.pop(0)
         
     def generate_perf_report(
         self,
@@ -90,17 +90,17 @@ class SpeedAnalyzer:
 
         try:
             # 开始追踪并执行目标 py 文件
-            print_color(f"开始分析文件：{abs_py_path}",fore_color="blue")
+            print_color(f"开始分析文件：{abs_py_path}", color="blue")
             profiler.start()
             # 执行 py 文件
             self._execute_py_file(abs_py_path)
             profiler.stop()
-            print_color("分析完成，开始生成 HTML 报告...",fore_color="green")
+            print_color("分析完成，开始生成 HTML 报告...", color="green")
 
             # 生成 HTML 报告并保存
             renderer = HTMLRenderer()
             html_content = renderer.render(profiler.last_session)
-            print_color(f"HTML 性能报告已生成",fore_color="green")
+            print_color("HTML 性能报告已生成", color="green")
             return html_content
 
         except Exception as e:

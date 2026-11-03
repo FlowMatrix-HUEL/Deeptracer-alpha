@@ -16,7 +16,9 @@ def test_build_env_local_structure():
     file_path = os.path.join('deeptracer', 'workflow', '__init__.py')
     assert os.path.exists(file_path), f"__init__文件不存在: {file_path}"
 @logtitle
-def test_creator_function():
+def test_creator_function(tmp_path):
     from deeptracer.workflow import build_env_local
-    builder = build_env_local()
-    builder.creator("sat_8WvTYiyCrWzXEl1wj7d3MAo1lXTPFXX8C9BRA3YpgwfNQFPdmSLMfeDfmHyYi2wu")
+    builder = build_env_local(tmp_path)
+    builder.creator("test-token")
+    text = (tmp_path / ".env.local").read_text(encoding="utf-8")
+    assert "COZE_API_TOKEN=test-token" in text

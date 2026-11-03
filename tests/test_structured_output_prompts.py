@@ -9,6 +9,7 @@ from deeptracer.agents import (
     structure_agent,
     teaching_agent,
 )
+from deeptracer.agents.utils import invoke_structured_or_fallback
 
 
 class _FakeResult:
@@ -106,3 +107,33 @@ def test_structured_output_prompts_include_json(monkeypatch: pytest.MonkeyPatch,
     assert prompt_factory.messages is not None
     rendered = " ".join(content for _, content in prompt_factory.messages).lower()
     assert "json" in rendered
+
+
+def test_structured_agent_failure_is_marked_as_fallback():
+    class FailingChain:
+        def invoke(self, payload):
+            raise RuntimeError("upstream unavailable")
+
+    result = invoke_structured_or_fallback(
+        FailingChain(),
+        {},
+        {"summary": "local"},
+    )
+
+    assert result["summary"] == "local"
+    assert result["_agentStatus"] == "fallback"
+    assert "upstream unavailable" in result["_agentError"]
+
+
+def test_structured_agent_success_is_marked_as_model_output():
+    class SuccessfulChain:
+        def invoke(self, payload):
+            return {"summary": "model"}
+
+    result = invoke_structured_or_fallback(
+        SuccessfulChain(),
+        {},
+        {"summary": "local"},
+    )
+
+    assert result == {"summary": "model", "_agentStatus": "model"}

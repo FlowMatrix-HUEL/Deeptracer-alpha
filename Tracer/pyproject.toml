@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0","wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypi-tracer"
+version = "0.1.0"
+requires-python = ">=3.10.9"
+authors = [{ name = "Ricardo-shuo-liu", email = "13838152117@139.com" }]
+description = "A lightweight intrusive Python function call tracer "
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = ["tracer", "debug", "recursion", "stack-trace"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Ricardo-shuo-liu/Tracer"
+"Bug Tracker" = "https://github.com/Ricardo-shuo-liu/Tracer/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tracer*"]
+exclude = ["tests*", "docs*"]
+
+[project.optional-dependencies]
+dev = [
+    "build>=0.10.0"
+]

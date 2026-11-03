@@ -1,36 +1,20 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
+import subprocess
 import sys
-import types
 from functools import lru_cache
-from io import StringIO
 from pathlib import Path
 
 from deeptracer import DEEPTRACER_DEV_ROOT
+from deeptracer.tracer_support import get_tracer_python_path
 
 
 @lru_cache(maxsize=1)
 def _vendor_root() -> Path:
     return Path(DEEPTRACER_DEV_ROOT) / "vendor" / "pathrise-python-tutor" / "v5-unity"
-
-
-@lru_cache(maxsize=1)
-def _load_pg_logger():
-    vendor_root = _vendor_root()
-    vendor_path = str(vendor_root)
-    if vendor_path not in sys.path:
-        sys.path.insert(0, vendor_path)
-
-    # Python Tutor's legacy backend still imports the removed stdlib `imp`.
-    if "imp" not in sys.modules:
-        imp_module = types.ModuleType("imp")
-        imp_module.new_module = types.ModuleType
-        sys.modules["imp"] = imp_module
-
-    import pg_logger  # type: ignore
-
-    return pg_logger
 
 
 def get_pytutor_static_dir() -> Path:
@@ -50,19 +34,70 @@ def execute_python_tutor_trace(
     if not is_pytutor_available():
         raise FileNotFoundError("Python Tutor local runtime is not available.")
 
-    pg_logger = _load_pg_logger()
-    out = StringIO()
     options = json.loads(options_json or "{}")
-
-    def json_finalizer(input_code: str, output_trace: list[dict]) -> None:
-        payload = {"code": input_code, "trace": output_trace}
-        out.write(json.dumps(payload, ensure_ascii=False))
-
-    pg_logger.exec_script_str_local(
-        user_script,
-        raw_input_json or "[]",
-        bool(options.get("cumulative_mode", False)),
-        options.get("heap_primitives", False),
-        json_finalizer,
+    payload = {
+        "userScript": user_script,
+        "rawInputJson": raw_input_json or "[]",
+        "cumulativeMode": bool(options.get("cumulative_mode", False)),
+        "heapPrimitives": bool(options.get("heap_primitives", False)),
+    }
+    environment = os.environ.copy()
+    project_root = str(Path(__file__).resolve().parents[2])
+    existing_python_path = environment.get("PYTHONPATH")
+    python_paths = [
+        project_root,
+        get_tracer_python_path(),
+        existing_python_path,
+    ]
+    environment["PYTHONPATH"] = os.pathsep.join(
+        item for item in python_paths if item
     )
-    return json.loads(out.getvalue())
+    environment["PYTHONIOENCODING"] = "utf-8"
+    timeout_seconds = float(os.getenv("DEEPTRACER_TUTOR_TIMEOUT_SECONDS", "8"))
+    process = subprocess.Popen(
+        [sys.executable, "-m", "deeptracer.server.pytutor_worker"],
+        cwd=project_root,
+        env=environment,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        start_new_session=os.name == "posix",
+    )
+    try:
+        stdout, stderr = process.communicate(
+            json.dumps(payload, ensure_ascii=False),
+            timeout=max(0.1, timeout_seconds),
+        )
+    except subprocess.TimeoutExpired:
+        _terminate_process_tree(process)
+        process.communicate()
+        raise TimeoutError(
+            f"Python Tutor execution exceeded {timeout_seconds:g} seconds."
+        )
+
+    if process.returncode != 0:
+        detail = (stderr or stdout or "").strip()
+        raise RuntimeError(
+            "Python Tutor execution failed"
+            + (f": {detail[-800:]}" if detail else f" (exit code {process.returncode})")
+        )
+    try:
+        result = json.loads(stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Python Tutor returned invalid JSON.") from exc
+    if not isinstance(result, dict):
+        raise RuntimeError("Python Tutor returned an invalid trace.")
+    return result
+
+
+def _terminate_process_tree(process: subprocess.Popen) -> None:
+    try:
+        if os.name == "posix":
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+        else:
+            process.kill()
+    except OSError:
+        pass

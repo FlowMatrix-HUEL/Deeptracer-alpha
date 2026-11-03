@@ -7,76 +7,103 @@ const loadingCopies = [
     "正在生成更容易理解的修改建议。"
 ];
 
-const sampleCode = `BOOKS = [
-    {"title": "Python 起步", "topic": "python", "pages": 180, "level": "beginner", "borrowed": 8},
-    {"title": "数据结构轻读", "topic": "algorithm", "pages": 240, "level": "intermediate", "borrowed": 5},
-    {"title": "可视化故事", "topic": "data", "pages": 210, "level": "beginner", "borrowed": 7},
-    {"title": "函数式思维", "topic": "python", "pages": 320, "level": "advanced", "borrowed": 3},
-    {"title": "图解排序", "topic": "algorithm", "pages": 190, "level": "beginner", "borrowed": 6},
-    {"title": "数据分析练习", "topic": "data", "pages": 280, "level": "intermediate", "borrowed": 4}
+const sampleCode = `LEARNER_RECORDS = [
+    {"name": "Ada", "topic": "syntax", "correct": 8, "total": 10},
+    {"name": "Ada", "topic": "algorithm", "correct": 6, "total": 10},
+    {"name": "Ada", "topic": "data", "correct": 9, "total": 10},
+    {"name": "Lin", "topic": "syntax", "correct": 7, "total": 10},
+    {"name": "Lin", "topic": "algorithm", "correct": 5, "total": 10},
+    {"name": "Lin", "topic": "data", "correct": 8, "total": 10},
 ]
 
-
-def score_book(book):
-    score = book["borrowed"] * 2
-    if book["level"] == "beginner":
-        score += 3
-    if book["pages"] < 220:
-        score += 2
-    return score
+TOPIC_WEIGHTS = {"syntax": 1.0, "algorithm": 1.3, "data": 1.1}
 
 
-def find_titles_for_topic(books, topic):
-    titles = []
-    for book in books:
-        if book["topic"] == topic:
-            titles.append(book["title"])
-    return titles
+def clamp_score(
+    score: float,
+    /,
+    *,
+    minimum: float = 0.0,
+    maximum: float = 100.0,
+) -> float:
+    return min(maximum, max(minimum, score))
 
 
-def build_topic_summary(books):
-    summary = {}
-    for book in books:
-        topic = book["topic"]
-        if topic not in summary:
-            summary[topic] = {
-                "count": 0,
-                "pages": 0,
-                "score": 0,
-                "titles": find_titles_for_topic(books, topic)
-            }
-        summary[topic]["count"] += 1
-        summary[topic]["pages"] += book["pages"]
-        summary[topic]["score"] += score_book(book)
-    return summary
+def attempt_score(
+    correct: int,
+    total: int,
+    *,
+    penalty: float = 0.0,
+) -> float:
+    if total <= 0:
+        return 0.0
+    raw_score = correct / total * 100 - penalty
+    return clamp_score(round(raw_score, 1))
 
 
-def choose_focus_topic(summary):
-    best_topic = ""
-    best_score = -1
-    for topic, info in summary.items():
-        if info["score"] > best_score:
-            best_topic = topic
-            best_score = info["score"]
-    return best_topic, summary[best_topic]
+def recursive_match_count(
+    scores: list[float],
+    target: float,
+    index: int = 0,
+) -> int:
+    if index >= len(scores):
+        return 0
+    matched = 1 if scores[index] >= target else 0
+    return matched + recursive_match_count(scores, target, index + 1)
 
 
-def explain_focus(topic, info):
-    avg_pages = info["pages"] // info["count"]
+def topic_average(records: list[dict[str, object]], topic: str) -> float:
+    scores = []
+    for record in records:
+        if record["topic"] != topic:
+            continue
+        scores.append(attempt_score(record["correct"], record["total"]))
+    return round(sum(scores) / len(scores), 1) if scores else 0.0
+
+
+def weighted_total(
+    topic_scores: dict[str, float],
+    *,
+    default_weight: float = 1.0,
+    **overrides: float,
+) -> float:
+    weighted_sum = 0.0
+    weight_sum = 0.0
+    for topic, score in topic_scores.items():
+        weight = overrides.get(topic, TOPIC_WEIGHTS.get(topic, default_weight))
+        weighted_sum += score * weight
+        weight_sum += weight
+    return round(weighted_sum / weight_sum, 1) if weight_sum else 0.0
+
+
+def build_learning_summary(records: list[dict[str, object]]) -> dict[str, object]:
+    topics = sorted({record["topic"] for record in records})
+    topic_scores = {
+        topic: topic_average(records, topic)
+        for topic in topics
+    }
+    weighted_score = weighted_total(topic_scores)
+    strong_topics = recursive_match_count(list(topic_scores.values()), 70)
     return {
-        "topic": topic,
-        "count": info["count"],
-        "avg_pages": avg_pages,
-        "titles": info["titles"]
+        "topic_scores": topic_scores,
+        "weighted_score": weighted_score,
+        "strong_topics": strong_topics,
     }
 
 
-def main():
-    summary = build_topic_summary(BOOKS)
-    focus_topic, focus_info = choose_focus_topic(summary)
-    result = explain_focus(focus_topic, focus_info)
-    print("summary:", summary)
-    print("focus:", result)
+def choose_next_action(summary: dict[str, object]) -> str:
+    scores = summary["topic_scores"]
+    weakest_topic = min(scores, key=scores.get)
+    if summary["strong_topics"] >= 2:
+        return f"继续巩固 {weakest_topic}"
+    return f"优先复习 {weakest_topic}"
+
+
+def main() -> None:
+    summary = build_learning_summary(LEARNER_RECORDS)
+    next_action = choose_next_action(summary)
+    print("learner summary:", summary)
+    print("next action:", next_action)
 
 
 if __name__ == "__main__":
@@ -86,8 +113,8 @@ if __name__ == "__main__":
 const demoData = {
     heroMetrics: [
         { label: "分析对象", value: "示例代码", note: "可以直接替换成你自己的代码" },
-        { label: "代码行数", value: "64", note: "输入框里的内容会参与分析" },
-        { label: "重点函数", value: "build_topic_summary", note: "按结构复杂度排序" },
+        { label: "代码行数", value: "101", note: "输入框里的内容会参与分析" },
+        { label: "重点函数", value: "build_learning_summary", note: "按结构复杂度排序" },
         { label: "分析环境", value: "Python 3.11", note: "执行可视化会自动切到兼容模式" }
     ],
     analysisMap: {
@@ -110,7 +137,7 @@ const demoData = {
             title: "结构",
             summary: "AST 语法树分析结果。",
             cards: [
-                { label: "函数数量", value: "6", note: "共 6 个函数定义" },
+                { label: "函数数量", value: "8", note: "包含递归与参数演示" },
                 { label: "print 调用", value: "2", note: "2 次 print 调用" },
                 { label: "循环数量", value: "4", note: "4 个循环结构" },
                 { label: "条件分支", value: "4", note: "4 个 if 条件判断" }
@@ -126,13 +153,13 @@ const demoData = {
             summary: "性能分析结果。",
             cards: [
                 { label: "总耗时", value: "0.42 ms", note: "本地执行总耗时" },
-                { label: "热点函数", value: "build_topic_summary", note: "耗时占比最高" },
+                { label: "热点函数", value: "recursive_match_count", note: "递归调用形成明显热点" },
                 { label: "循环次数", value: "12", note: "总共执行 12 次循环" },
                 { label: "优化空间", value: "中等", note: "有优化可能" }
             ],
             points: [
                 "整体性能表现良好。",
-                "build_topic_summary 是主要耗时点。",
+                "recursive_match_count 会形成可观察的递归调用链。",
                 "可以考虑缓存中间结果。"
             ]
         },
@@ -154,40 +181,33 @@ const demoData = {
     },
     suggestions: [
         {
-            id: "merge-loops",
-            title: "合并重复循环",
-            explanation: "build_topic_summary 中存在重复遍历，可以合并以减少循环次数。",
+            id: "replace-recursive-count",
+            title: "将递归匹配改为迭代",
+            explanation: "recursive_match_count 的递归调用清楚但会增加调用层级，数据量变大时可以改为迭代。",
             priority: "高",
             confidence: "中",
             risk: "低",
             file: "当前代码",
-            note: "合并循环可以减少遍历次数，提升性能。",
+            note: "迭代写法更稳定，也更容易在调用追踪中观察。",
             diff: [
-                [1, " ", "def build_topic_summary(books):"],
-                [2, " ", "    summary = {}"],
-                [3, "-", "    titles_map = {}"],
-                [4, " ", "    for book in books:"],
-                [5, " ", "        topic = book[\"topic\"]"],
-                [6, "+", "        if topic not in summary:"],
-                [7, "+", "            summary[topic] = {\"count\": 0, \"pages\": 0, \"score\": 0, \"titles\": []}"],
-                [8, " ", "        summary[topic][\"count\"] += 1"]
+                [1, " ", "def recursive_match_count(scores, target, index=0):"],
+                [2, "-", "    return matched + recursive_match_count(...)"],
+                [3, "+", "    return sum(score >= target for score in scores)"]
             ]
         },
         {
-            id: "use-dict-get",
-            title: "使用 dict.get() 简化代码",
-            explanation: "可以使用 dict.get() 方法简化字典访问逻辑。",
+            id: "cache-topic-average",
+            title: "缓存 topic_average 的中间结果",
+            explanation: "build_learning_summary 会按主题重复扫描记录，可以先建立 topic 分组再计算平均值。",
             priority: "中",
             confidence: "高",
             risk: "低",
             file: "当前代码",
-            note: "简化字典访问，提高代码可读性。",
+            note: "一次分组后复用结果，减少重复遍历。",
             diff: [
-                [1, " ", "def choose_focus_topic(summary):"],
-                [2, "-", "    best_topic = \"\""],
-                [3, "-", "    best_score = -1"],
-                [4, "+", "    best_topic, best_info = max(summary.items(), key=lambda x: x[1][\"score\"], default=(\"\", None))"],
-                [5, "+", "    return best_topic, best_info or {\"score\": -1}"]
+                [1, "-", "    topic_scores = {topic: topic_average(records, topic) ...}"],
+                [2, "+", "    grouped = group_records_by_topic(records)"],
+                [3, "+", "    topic_scores = {topic: average_scores(items) ...}"]
             ]
         }
     ],
@@ -206,6 +226,7 @@ const demoData = {
 const state = {
     theme: "mist",
     currentPage: "home",
+    activeWorkspace: "analysis",
     activeTab: "workflow",
     activeSuggestion: demoData.suggestions[0].id,
     activeViz: "ast",
@@ -213,7 +234,14 @@ const state = {
     loadingStep: 0,
     currentFileName: "",
     currentCode: "",
+    isBuiltInSample: false,
     originalCode: "", // 分析前的原始代码
+    analyzedCode: "",
+    activeExecutionMode: "tutor",
+    traceSelectedFunctions: new Set(),
+    traceActiveView: "tree",
+    traceResult: null,
+    terminalOutputCode: "",
     isEditing: false,
     hasUnsavedChanges: false,
     latestAnalysisTaskId: null,
@@ -281,10 +309,36 @@ function initElements() {
         tutorPlaceholder: document.getElementById("tutorPlaceholder"),
         tutorVisualizerMount: document.getElementById("tutorVisualizerMount"),
         tutorStage: document.querySelector(".tutor-stage"),
+        executionModeTabs: document.getElementById("executionModeTabs"),
+        executionViews: document.querySelectorAll("[data-execution-view]"),
+        tutorExecutionView: document.getElementById("tutorExecutionView"),
+        tracerExecutionView: document.getElementById("tracerExecutionView"),
+        terminalExecutionView: document.getElementById("terminalExecutionView"),
+        runTerminalCode: document.getElementById("runTerminalCode"),
+        terminalRunStatus: document.getElementById("terminalRunStatus"),
+        terminalRunDuration: document.getElementById("terminalRunDuration"),
+        terminalRunOutput: document.getElementById("terminalRunOutput"),
+        traceFunctionList: document.getElementById("traceFunctionList"),
+        traceTime: document.getElementById("traceTime"),
+        traceColor: document.getElementById("traceColor"),
+        traceExceptions: document.getElementById("traceExceptions"),
+        traceLocals: document.getElementById("traceLocals"),
+        runTracerTrace: document.getElementById("runTracerTrace"),
+        traceViewTabs: document.getElementById("traceViewTabs"),
+        traceTreeView: document.getElementById("traceTreeView"),
+        traceTerminalView: document.getElementById("traceTerminalView"),
+        traceTerminalOutput: document.getElementById("traceTerminalOutput"),
+        traceStatus: document.getElementById("traceStatus"),
+        expandTraceTree: document.getElementById("expandTraceTree"),
+        collapseTraceTree: document.getElementById("collapseTraceTree"),
         
         // 分析结果页面
         runtimeBanner: document.getElementById("runtimeBanner"),
         summaryCards: document.getElementById("summaryCards"),
+        workspaceTabs: document.getElementById("workspaceTabs"),
+        workspacePanels: document.querySelectorAll("[data-workspace-panel]"),
+        backToCode: document.getElementById("backToCode"),
+        openTracer: document.getElementById("openTracer"),
         resultTabs: document.getElementById("resultTabs"),
         tabSummary: document.getElementById("tabSummary"),
         tabBars: document.getElementById("tabBars"),
@@ -334,6 +388,341 @@ function switchToPage(pageName) {
     if (el.navbar) {
         el.navbar.hidden = pageName === "home";
     }
+
+    window.scrollTo({ top: 0, behavior: "auto" });
+}
+
+function setWorkspaceView(workspaceName) {
+    const target = document.querySelector(`[data-workspace-panel="${workspaceName}"]`);
+    if (!target) return;
+
+    state.activeWorkspace = workspaceName;
+    el.workspaceTabs.querySelectorAll(".workspace-tab").forEach(tab => {
+        const isActive = tab.dataset.workspace === workspaceName;
+        tab.classList.toggle("is-active", isActive);
+        tab.setAttribute("aria-selected", String(isActive));
+    });
+    el.workspacePanels.forEach(panel => {
+        panel.hidden = panel.dataset.workspacePanel !== workspaceName;
+    });
+
+    if (workspaceName === "chat") {
+        window.requestAnimationFrame(() => {
+            if (el.chatTranscript) {
+                el.chatTranscript.scrollTop = el.chatTranscript.scrollHeight;
+            }
+        });
+    }
+}
+
+function setExecutionMode(mode) {
+    const target = document.querySelector(`[data-execution-view="${mode}"]`);
+    if (!target) return;
+
+    state.activeExecutionMode = mode;
+    el.executionModeTabs.querySelectorAll(".execution-mode-tab").forEach(tab => {
+        const isActive = tab.dataset.executionMode === mode;
+        tab.classList.toggle("is-active", isActive);
+        tab.setAttribute("aria-selected", String(isActive));
+    });
+    el.executionViews.forEach(view => {
+        view.hidden = view.dataset.executionView !== mode;
+    });
+    el.syncTutor.hidden = mode !== "tutor";
+}
+
+function getTraceableFunctions() {
+    const currentCode = el.sourceCode?.value.trim();
+    if (!state.analyzedCode || state.analyzedCode !== currentCode) {
+        return [];
+    }
+    return dataStore.analysisMap?.ast?.functions || [];
+}
+
+function resetTraceWorkspace(autoSelect = false) {
+    state.traceResult = null;
+    state.traceSelectedFunctions = new Set();
+    const functions = getTraceableFunctions();
+    if (autoSelect && functions.length) {
+        const focusName = dataStore.analysisMap?.ast?.focusFunction;
+        const preferred = functions.find(fn =>
+            fn.qualified_name === focusName ||
+            fn.name === focusName ||
+            String(fn.qualified_name || "").endsWith(`.${focusName}`)
+        ) || functions[0];
+        state.traceSelectedFunctions.add(preferred.qualified_name || preferred.name);
+    }
+    renderTraceFunctionOptions();
+    renderTraceResult();
+}
+
+function renderTraceFunctionOptions() {
+    if (!el.traceFunctionList) return;
+    const functions = getTraceableFunctions();
+    const availableKeys = new Set(
+        functions.map(fn => fn.qualified_name || fn.name)
+    );
+    state.traceSelectedFunctions = new Set(
+        [...state.traceSelectedFunctions].filter(key => availableKeys.has(key))
+    );
+
+    if (!functions.length) {
+        el.traceFunctionList.innerHTML = `
+            <p class="trace-empty">先分析代码，才能选择需要追踪的函数。</p>
+        `;
+        if (!state.traceResult) {
+            el.traceStatus.textContent = "等待代码分析结果。";
+        }
+        return;
+    }
+
+    el.traceFunctionList.innerHTML = functions.map(fn => {
+        const key = fn.qualified_name || fn.name;
+        return `
+            <label class="trace-function-option">
+                <input type="checkbox" data-trace-function="${escapeHtml(key)}" ${state.traceSelectedFunctions.has(key) ? "checked" : ""}>
+                <span>
+                    <strong>${escapeHtml(key)}</strong>
+                    <code>${escapeHtml(fn.signature || fn.name)}</code>
+                </span>
+            </label>
+        `;
+    }).join("");
+
+    if (!state.traceResult) {
+        el.traceStatus.textContent = state.traceSelectedFunctions.size
+            ? `已选择 ${state.traceSelectedFunctions.size} 个函数。`
+            : "请选择至少一个函数，然后开始追踪。";
+    }
+}
+
+function renderTraceResult() {
+    if (!el.traceTreeView) return;
+    const result = state.traceResult;
+    if (!result) {
+        el.traceTreeView.innerHTML = `
+            <div class="trace-empty">
+                <strong>调用树会显示在这里</strong>
+                <p>选择函数后运行，可查看参数、返回值和嵌套调用关系。</p>
+            </div>
+        `;
+        el.traceTerminalOutput.textContent = "";
+        return;
+    }
+
+    const roots = result.traceTree || [];
+    if (roots.length) {
+        el.traceTreeView.innerHTML = `
+            <div class="trace-tree">
+                ${roots.map(renderTraceNode).join("")}
+            </div>
+        `;
+    } else {
+        el.traceTreeView.innerHTML = `
+            <div class="trace-empty">
+                <strong>没有捕获到目标函数调用</strong>
+                <p>${escapeHtml(result.runtimeError || "请确认选中的函数会在当前代码中被调用。")}</p>
+            </div>
+        `;
+    }
+    const callCount = Number(result.callCount || 0);
+    const duration = Number(result.durationMs || 0).toFixed(1);
+    el.traceStatus.textContent = result.runtimeError
+        ? `捕获 ${callCount} 次调用 · ${duration} ms · ${result.runtimeError}`
+        : `捕获 ${callCount} 次调用 · 执行 ${duration} ms`;
+    el.traceTerminalOutput.innerHTML = ansiToHtml(result.terminalOutput || "没有终端输出。");
+}
+
+function renderTraceNode(node) {
+    const children = node.children || [];
+    const cost = node.costSeconds == null
+        ? ""
+        : `<span class="trace-cost">${(node.costSeconds * 1000).toFixed(3)} ms</span>`;
+    const returned = node.error
+        ? `<div class="trace-node-return">抛出：${escapeHtml(node.error)}</div>`
+        : node.returned != null
+            ? `<div class="trace-node-return">返回：${escapeHtml(node.returned)}</div>`
+            : `<div class="trace-node-return">未返回</div>`;
+    return `
+        <details class="trace-node" open>
+            <summary class="trace-node-head">
+                <span class="disclosure-chevron" aria-hidden="true"></span>
+                <strong>→ ${escapeHtml(node.name)}</strong>
+                ${cost}
+            </summary>
+            <div class="trace-node-body">
+                <div class="trace-node-arguments">${escapeHtml(node.argumentText || node.arguments || "()")}</div>
+                ${returned}
+            </div>
+            ${children.length ? `<div class="trace-children">${children.map(renderTraceNode).join("")}</div>` : ""}
+        </details>
+    `;
+}
+
+function setTraceView(viewName) {
+    state.traceActiveView = viewName;
+    el.traceViewTabs.querySelectorAll(".trace-view-tab").forEach(tab => {
+        const isActive = tab.dataset.traceView === viewName;
+        tab.classList.toggle("is-active", isActive);
+        tab.setAttribute("aria-selected", String(isActive));
+    });
+    el.traceTreeView.hidden = viewName !== "tree";
+    el.traceTerminalView.hidden = viewName !== "terminal";
+}
+
+function ansiToHtml(text) {
+    const source = String(text || "");
+    const colorMap = {
+        "31": "ansi-red",
+        "32": "ansi-green",
+        "33": "ansi-yellow",
+        "34": "ansi-blue",
+        "35": "ansi-magenta",
+        "36": "ansi-cyan",
+    };
+    const pattern = /\x1b\[([0-9;]*)m/g;
+    let html = "";
+    let cursor = 0;
+    let activeClass = "";
+    let match;
+    while ((match = pattern.exec(source)) !== null) {
+        const segment = source.slice(cursor, match.index);
+        if (segment) {
+            html += activeClass
+                ? `<span class="${activeClass}">${escapeHtml(segment)}</span>`
+                : escapeHtml(segment);
+        }
+        const codes = match[1].split(";").filter(Boolean);
+        const resetIndex = codes.lastIndexOf("0");
+        if (resetIndex >= 0) {
+            codes.splice(0, resetIndex + 1);
+        }
+        const colorCode = [...codes].reverse().find(code => colorMap[code]);
+        activeClass = colorCode ? colorMap[colorCode] : activeClass;
+        if (codes.length === 0) {
+            activeClass = "";
+        }
+        cursor = pattern.lastIndex;
+    }
+    const rest = source.slice(cursor);
+    if (rest) {
+        html += activeClass
+            ? `<span class="${activeClass}">${escapeHtml(rest)}</span>`
+            : escapeHtml(rest);
+    }
+    return html;
+}
+
+async function runTracerTrace() {
+    const code = el.sourceCode.value.trim();
+    if (!code) {
+        setChatStatus("请先输入代码。");
+        return;
+    }
+    if (state.analyzedCode !== code) {
+        el.traceStatus.textContent = "代码已修改或尚未分析，请先重新分析代码。";
+        return;
+    }
+    const functions = [...state.traceSelectedFunctions];
+    if (!functions.length) {
+        el.traceStatus.textContent = "请至少选择一个需要追踪的函数。";
+        return;
+    }
+
+    const originalLabel = el.runTracerTrace.textContent;
+    el.runTracerTrace.disabled = true;
+    el.runTracerTrace.textContent = "正在追踪...";
+    el.traceStatus.textContent = "Tracer 正在运行当前代码并收集调用关系...";
+    try {
+        const response = await fetch("/api/tracer/trace", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                code,
+                functions,
+                options: {
+                    timeTrace: el.traceTime.checked,
+                    useColor: el.traceColor.checked,
+                    exceptionTrace: el.traceExceptions.checked,
+                    showLocals: el.traceLocals.checked,
+                }
+            })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.detail || `HTTP ${response.status}`);
+        }
+        state.traceResult = payload;
+        setTraceView("tree");
+        renderTraceResult();
+    } catch (error) {
+        el.traceStatus.textContent = `调用追踪失败：${error.message}`;
+    } finally {
+        el.runTracerTrace.disabled = false;
+        el.runTracerTrace.textContent = originalLabel;
+    }
+}
+
+async function runTerminalCode() {
+    const code = el.sourceCode.value.trim();
+    if (!code) {
+        el.terminalRunStatus.textContent = "请先输入代码。";
+        return;
+    }
+
+    const originalLabel = el.runTerminalCode.textContent;
+    el.runTerminalCode.disabled = true;
+    el.runTerminalCode.textContent = "运行中...";
+    el.terminalRunStatus.textContent = "正在独立子进程中运行当前代码...";
+    el.terminalRunDuration.textContent = "";
+    el.terminalRunOutput.textContent = "";
+    try {
+        const response = await fetch("/api/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.detail || `HTTP ${response.status}`);
+        }
+
+        state.terminalOutputCode = code;
+        const sections = [];
+        if (payload.stdout) {
+            sections.push(payload.stdout);
+        }
+        if (payload.stderr) {
+            sections.push(`[stderr]\n${payload.stderr}`);
+        }
+        if (payload.runtimeError) {
+            sections.push(`[error]\n${payload.runtimeError}`);
+        }
+        if (payload.traceback) {
+            sections.push(`[traceback]\n${payload.traceback.trim()}`);
+        }
+        el.terminalRunOutput.textContent = sections.length
+            ? sections.join("\n")
+            : "(程序运行完成，没有输出)";
+        el.terminalRunStatus.textContent = payload.runtimeError
+            ? "运行结束，但程序抛出异常。"
+            : "运行完成。";
+        el.terminalRunDuration.textContent = `耗时 ${Number(payload.durationMs || 0).toFixed(1)} ms · exit ${payload.exitCode ?? 0}`;
+    } catch (error) {
+        state.terminalOutputCode = "";
+        el.terminalRunStatus.textContent = `运行失败：${error.message}`;
+        el.terminalRunOutput.textContent = error.message;
+    } finally {
+        el.runTerminalCode.disabled = false;
+        el.runTerminalCode.textContent = originalLabel;
+    }
+}
+
+function resetTerminalOutput() {
+    state.terminalOutputCode = "";
+    el.terminalRunStatus.textContent = "等待运行。";
+    el.terminalRunDuration.textContent = "";
+    el.terminalRunOutput.textContent = "点击“运行代码”查看程序输出。";
 }
 
 // 更新行号
@@ -354,8 +743,8 @@ function renderSummaryCards() {
     const metrics = dataStore.heroMetrics || [];
     el.summaryCards.innerHTML = metrics.map(m => `
         <div class="summary-card">
-            <span>${m.label}</span>
-            <strong>${m.value}</strong>
+            <span>${escapeHtml(m.label)}</span>
+            <strong>${escapeHtml(m.value)}</strong>
         </div>
     `).join("");
 }
@@ -821,6 +1210,10 @@ async function sendChatMessage() {
         setChatStatus("请先输入代码，再发起追问。");
         return;
     }
+    if (state.analyzedCode !== code) {
+        setChatStatus("代码已修改或尚未完成分析，请先重新点击“分析代码”。");
+        return;
+    }
 
     abortActiveChat("");
     const requestId = state.activeChatRequestId + 1;
@@ -880,23 +1273,97 @@ async function sendChatMessage() {
 // 渲染分析标签页内容
 function renderAnalysisTab() {
     const tab = dataStore.analysisMap[state.activeTab] || {};
-    
-    el.tabSummary.innerHTML = `<h3>${tab.title || ""}</h3><p>${tab.summary || ""}</p>`;
-    
-    el.tabBars.innerHTML = (tab.cards || []).map(c => `
-        <div class="chart-item">
-            <div class="chart-meta">
-                <span>${c.label}</span>
-                <span>${c.value}</span>
+    const cards = tab.cards || [];
+    const bars = tab.bars || [];
+    const functions = tab.functions || [];
+
+    el.tabSummary.innerHTML = `
+        <h3>${escapeHtml(tab.title || "")}</h3>
+        <p>${escapeHtml(tab.summary || "")}</p>
+    `;
+
+    const cardsHtml = cards.length
+        ? `
+            <div class="tab-metric-grid">
+                ${cards.map(card => `
+                    <div class="tab-metric">
+                        <span>${escapeHtml(card.label)}</span>
+                        <strong>${escapeHtml(card.value)}</strong>
+                    </div>
+                `).join("")}
             </div>
-            <div class="chart-track">
-                <div class="chart-fill" style="width: ${Math.min(100, parseInt(c.value) || 0)}%"></div>
+        `
+        : "";
+
+    const barsHtml = bars.length
+        ? bars.map(bar => {
+            const width = Math.max(0, Math.min(100, Number(bar.value) || 0));
+            return `
+                <div class="chart-item">
+                    <div class="chart-meta">
+                        <span>${escapeHtml(bar.label)}</span>
+                        <span>${escapeHtml(bar.value)}</span>
+                    </div>
+                    <div class="chart-track">
+                        <div class="chart-fill" style="width: ${width}%"></div>
+                    </div>
+                </div>
+            `;
+        }).join("")
+        : "";
+
+    const functionsHtml = functions.length
+        ? `
+            <div class="function-signature-list">
+                <div class="function-signature-title">
+                    <h4>函数签名与参数</h4>
+                    <div class="inline-actions">
+                        <button class="text-button" type="button" data-function-details="expand">展开全部</button>
+                        <button class="text-button" type="button" data-function-details="collapse">收起全部</button>
+                    </div>
+                </div>
+                ${functions.map(fn => {
+                    const parameters = (fn.parameters || []).map(parameter => {
+                        const details = [
+                            parameter.kind,
+                            parameter.annotation ? `类型：${parameter.annotation}` : "",
+                            parameter.default !== null && parameter.default !== undefined
+                                ? `默认值：${parameter.default}`
+                                : ""
+                        ].filter(Boolean).map(escapeHtml).join(" · ");
+                        return `
+                            <span class="signature-parameter">
+                                <strong>${escapeHtml(parameter.name)}</strong>
+                                <small>${details}</small>
+                            </span>
+                        `;
+                    }).join("");
+                    return `
+                        <details class="function-signature-card">
+                            <summary class="function-signature-head">
+                                <span class="function-signature-main">
+                                    <strong>${escapeHtml(fn.name)}</strong>
+                                    <code>${escapeHtml(fn.signature)}</code>
+                                </span>
+                                <span class="function-signature-meta">
+                                    第 ${escapeHtml(fn.lineno)} 行
+                                    <span class="disclosure-chevron" aria-hidden="true"></span>
+                                </span>
+                            </summary>
+                            <div class="signature-parameters">
+                                ${parameters || '<span class="signature-parameter"><small>该函数没有显式参数</small></span>'}
+                            </div>
+                        </details>
+                    `;
+                }).join("")}
             </div>
-        </div>
-    `).join("");
-    
+        `
+        : "";
+
+    el.tabBars.innerHTML = cardsHtml + barsHtml + functionsHtml;
+
     el.tabPoints.innerHTML = (tab.points || []).map(p => `
-        <div class="notes-item">${p}</div>
+        <div class="notes-item">${escapeHtml(p)}</div>
     `).join("");
 }
 
@@ -904,9 +1371,9 @@ function renderAnalysisTab() {
 function renderSuggestions() {
     const suggestions = dataStore.suggestions || [];
     el.suggestionList.innerHTML = suggestions.map(s => `
-        <button class="suggestion-item ${s.id === state.activeSuggestion ? "is-active" : ""}" data-suggestion="${s.id}">
-            <div class="suggestion-title">${s.title}</div>
-            <div class="suggestion-meta">建议强度：${s.priority || "-"} · 置信度：${s.confidence || "-"} · 风险：${s.risk || "-"}</div>
+        <button class="suggestion-item ${s.id === state.activeSuggestion ? "is-active" : ""}" data-suggestion="${escapeHtml(s.id)}">
+            <div class="suggestion-title">${escapeHtml(s.title)}</div>
+            <div class="suggestion-meta">建议强度：${escapeHtml(s.priority || "-")} · 置信度：${escapeHtml(s.confidence || "-")} · 风险：${escapeHtml(s.risk || "-")}</div>
         </button>
     `).join("");
     
@@ -940,9 +1407,9 @@ function renderSuggestionDetail() {
         : '<div class="suggestion-empty">当前没有可展示的代码锚点。</div>';
 
     el.suggestionDetail.innerHTML = `
-        <h3>${suggestion.title}</h3>
-        <p>${suggestion.explanation || ""}</p>
-        <div class="suggestion-meta">建议强度：${suggestion.priority || "-"} · 置信度：${suggestion.confidence || "-"} · 风险：${suggestion.risk || "-"}</div>
+        <h3>${escapeHtml(suggestion.title)}</h3>
+        <p>${escapeHtml(suggestion.explanation || "")}</p>
+        <div class="suggestion-meta">建议强度：${escapeHtml(suggestion.priority || "-")} · 置信度：${escapeHtml(suggestion.confidence || "-")} · 风险：${escapeHtml(suggestion.risk || "-")}</div>
         <div class="suggestion-detail-grid">
             <section class="suggestion-detail-card">
                 <h4>为什么选中这条</h4>
@@ -988,12 +1455,10 @@ function renderVisualizations() {
         iframe.style.width = "100%";
         iframe.style.height = "600px";
         iframe.style.border = "none";
+        iframe.setAttribute("sandbox", "allow-scripts");
         el.astVizContent.innerHTML = "";
         el.astVizContent.appendChild(iframe);
-        
-        iframe.contentWindow.document.open();
-        iframe.contentWindow.document.write(sanitizeVisualizationHtml(viz.ast));
-        iframe.contentWindow.document.close();
+        iframe.srcdoc = sanitizeVisualizationHtml(viz.ast);
     } else {
         el.astVizContent.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--muted);">AST 可视化生成失败或不可用</p>';
     }
@@ -1004,12 +1469,11 @@ function renderVisualizations() {
         iframe.style.width = "100%";
         iframe.style.height = "700px";
         iframe.style.border = "none";
+        // PyInstrument persists its view state in localStorage/sessionStorage.
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
         el.perfVizContent.innerHTML = "";
         el.perfVizContent.appendChild(iframe);
-        
-        iframe.contentWindow.document.open();
-        iframe.contentWindow.document.write(sanitizeVisualizationHtml(viz.performance));
-        iframe.contentWindow.document.close();
+        iframe.srcdoc = sanitizeVisualizationHtml(viz.performance);
     } else {
         el.perfVizContent.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--muted);">性能分析可视化生成失败或不可用</p>';
     }
@@ -1023,6 +1487,8 @@ function renderAll() {
     renderSuggestions();
     renderVisualizations();
     renderChatTranscript();
+    renderTraceFunctionOptions();
+    renderTraceResult();
 }
 
 function getDefaultCodeLayout() {
@@ -1231,10 +1697,15 @@ function initResizeHandler() {
 // 载入示例代码
 function loadSample() {
     el.sourceCode.value = sampleCode;
-    state.currentFileName = "示例代码";
+    state.currentFileName = "示例代码 · 只读";
     state.currentCode = sampleCode;
+    state.isBuiltInSample = true;
+    state.analyzedCode = "";
+    resetTraceWorkspace(false);
+    resetTerminalOutput();
     updateLineNumbers();
     el.fileName.textContent = state.currentFileName;
+    el.editStatus.textContent = "官方示例 · 只读";
     resetChatState("示例已载入。分析后你可以继续追问，也可以直接用这段代码开始对话。");
     
     // 显示导航栏
@@ -1250,6 +1721,10 @@ function clearCode() {
     el.sourceCode.value = "";
     state.currentFileName = "未命名";
     state.currentCode = "";
+    state.isBuiltInSample = false;
+    state.analyzedCode = "";
+    resetTraceWorkspace(false);
+    resetTerminalOutput();
     updateLineNumbers();
     el.fileName.textContent = state.currentFileName;
     resetTutorSurface();
@@ -1273,6 +1748,10 @@ async function handleFileSelect(event) {
             el.sourceCode.value = content;
             state.currentFileName = file.name;
             state.currentCode = content;
+            state.isBuiltInSample = false;
+            state.analyzedCode = "";
+            resetTraceWorkspace(false);
+            resetTerminalOutput();
             updateLineNumbers();
             el.fileName.textContent = state.currentFileName;
             
@@ -1312,6 +1791,10 @@ function hideLoading() {
 
 // 启用编辑模式
 function enableEditMode() {
+    if (state.isBuiltInSample) {
+        el.editStatus.textContent = "官方示例为只读；请载入自己的 .py 文件后再编辑。";
+        return;
+    }
     state.isEditing = true;
     el.sourceCode.readOnly = false;
     el.sourceCode.hidden = false;
@@ -1348,6 +1831,7 @@ function saveEdit() {
     
     state.currentCode = newCode;
     state.hasUnsavedChanges = true;
+    resetTraceWorkspace(false);
     
     // 显示 Diff
     showDiff(state.originalCode, newCode);
@@ -1365,60 +1849,219 @@ function saveEdit() {
 function showDiff(oldCode, newCode) {
     const oldLines = oldCode.split("\n");
     const newLines = newCode.split("\n");
-    
-    // 简单的 Diff 算法
     const diff = computeSimpleDiff(oldLines, newLines);
-    
+    const displayRows = buildDiffHunks(diff);
+    const added = diff.filter(line => line.type === "added").length;
+    const removed = diff.filter(line => line.type === "removed").length;
+
     el.diffViewer.innerHTML = `
         <div class="diff-header">
-            📝 代码对比（红色：删除，绿色：添加）
+            <strong>统一 Diff</strong>
+            <span class="diff-stats">
+                <span class="diff-added-count">+${added}</span>
+                <span class="diff-removed-count">-${removed}</span>
+            </span>
         </div>
-        ${diff.map(line => `
+        <div class="diff-column-head">
+            <span>旧版本</span>
+            <span>新版本</span>
+            <span></span>
+            <span>代码</span>
+        </div>
+        ${displayRows.map(line => line.type === "collapsed" ? `
+            <div class="diff-collapsed">
+                <span>···</span>
+                <span>已折叠 ${line.skipped} 行未修改内容</span>
+            </div>
+        ` : `
             <div class="diff-line ${line.type}">
-                <span class="line-num">${line.lineNum}</span>
+                <span class="diff-old-num">${line.oldLine ?? ""}</span>
+                <span class="diff-new-num">${line.newLine ?? ""}</span>
                 <span class="diff-marker">${line.marker}</span>
-                <span class="diff-content">${escapeHtml(line.content)}</span>
+                <code class="diff-content">${escapeHtml(line.content)}</code>
             </div>
         `).join("")}
     `;
 }
 
-// 简单的 Diff 计算
+function buildDiffHunks(diff, context = 3) {
+    const changed = [];
+    diff.forEach((line, index) => {
+        if (line.type !== "unchanged") changed.push(index);
+    });
+    if (!changed.length) return diff;
+
+    const ranges = [];
+    for (const index of changed) {
+        const start = Math.max(0, index - context);
+        const end = Math.min(diff.length, index + context + 1);
+        const previous = ranges[ranges.length - 1];
+        if (previous && start <= previous.end) {
+            previous.end = Math.max(previous.end, end);
+        } else {
+            ranges.push({ start, end });
+        }
+    }
+
+    const rows = [];
+    let cursor = 0;
+    for (const range of ranges) {
+        if (range.start > cursor) {
+            rows.push({ type: "collapsed", skipped: range.start - cursor });
+        }
+        rows.push(...diff.slice(range.start, range.end));
+        cursor = range.end;
+    }
+    if (cursor < diff.length) {
+        rows.push({ type: "collapsed", skipped: diff.length - cursor });
+    }
+    return rows;
+}
+
+// 基于最长公共子序列的行级 Diff；大文件使用前后缀压缩回退。
 function computeSimpleDiff(oldLines, newLines) {
+    if (oldLines.length * newLines.length > 4_000_000) {
+        return computeCompressedDiff(oldLines, newLines);
+    }
+
+    const rows = oldLines.length;
+    const cols = newLines.length;
+    const lcs = Array.from({ length: rows + 1 }, () => new Uint32Array(cols + 1));
+    for (let i = rows - 1; i >= 0; i--) {
+        for (let j = cols - 1; j >= 0; j--) {
+            lcs[i][j] = oldLines[i] === newLines[j]
+                ? lcs[i + 1][j + 1] + 1
+                : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+        }
+    }
+
     const result = [];
-    const maxLen = Math.max(oldLines.length, newLines.length);
-    
-    for (let i = 0; i < maxLen; i++) {
-        const oldLine = oldLines[i] || "";
-        const newLine = newLines[i] || "";
-        
-        if (oldLine === newLine) {
+    let oldIndex = 0;
+    let newIndex = 0;
+    while (oldIndex < rows && newIndex < cols) {
+        if (oldLines[oldIndex] === newLines[newIndex]) {
             result.push({
                 type: "unchanged",
                 marker: " ",
-                content: oldLine,
-                lineNum: i + 1
+                content: oldLines[oldIndex],
+                lineNum: oldIndex + 1,
+                oldLine: oldIndex + 1,
+                newLine: newIndex + 1
             });
+            oldIndex += 1;
+            newIndex += 1;
+        } else if (lcs[oldIndex + 1][newIndex] >= lcs[oldIndex][newIndex + 1]) {
+            result.push({
+                type: "removed",
+                marker: "-",
+                content: oldLines[oldIndex],
+                lineNum: oldIndex + 1,
+                oldLine: oldIndex + 1,
+                newLine: null
+            });
+            oldIndex += 1;
         } else {
-            if (oldLine) {
-                result.push({
-                    type: "removed",
-                    marker: "-",
-                    content: oldLine,
-                    lineNum: i + 1
-                });
-            }
-            if (newLine) {
-                result.push({
-                    type: "added",
-                    marker: "+",
-                    content: newLine,
-                    lineNum: i + 1
-                });
-            }
+            result.push({
+                type: "added",
+                marker: "+",
+                content: newLines[newIndex],
+                lineNum: newIndex + 1,
+                oldLine: null,
+                newLine: newIndex + 1
+            });
+            newIndex += 1;
         }
     }
-    
+
+    while (oldIndex < rows) {
+        result.push({
+            type: "removed",
+            marker: "-",
+            content: oldLines[oldIndex],
+            lineNum: oldIndex + 1,
+            oldLine: oldIndex + 1,
+            newLine: null
+        });
+        oldIndex += 1;
+    }
+    while (newIndex < cols) {
+        result.push({
+            type: "added",
+            marker: "+",
+            content: newLines[newIndex],
+            lineNum: newIndex + 1,
+            oldLine: null,
+            newLine: newIndex + 1
+        });
+        newIndex += 1;
+    }
+    return result;
+}
+
+function computeCompressedDiff(oldLines, newLines) {
+    let prefix = 0;
+    while (
+        prefix < oldLines.length &&
+        prefix < newLines.length &&
+        oldLines[prefix] === newLines[prefix]
+    ) {
+        prefix += 1;
+    }
+    let oldEnd = oldLines.length - 1;
+    let newEnd = newLines.length - 1;
+    while (
+        oldEnd >= prefix &&
+        newEnd >= prefix &&
+        oldLines[oldEnd] === newLines[newEnd]
+    ) {
+        oldEnd -= 1;
+        newEnd -= 1;
+    }
+
+    const result = [];
+    for (let i = 0; i < prefix; i++) {
+        result.push({
+            type: "unchanged",
+            marker: " ",
+            content: oldLines[i],
+            lineNum: i + 1,
+            oldLine: i + 1,
+            newLine: i + 1
+        });
+    }
+    for (let i = prefix; i <= oldEnd; i++) {
+        result.push({
+            type: "removed",
+            marker: "-",
+            content: oldLines[i],
+            lineNum: i + 1,
+            oldLine: i + 1,
+            newLine: null
+        });
+    }
+    for (let i = prefix; i <= newEnd; i++) {
+        result.push({
+            type: "added",
+            marker: "+",
+            content: newLines[i],
+            lineNum: i + 1,
+            oldLine: null,
+            newLine: i + 1
+        });
+    }
+    const suffixLength = oldLines.length - oldEnd - 1;
+    for (let offset = 0; offset < suffixLength; offset++) {
+        const oldLineIndex = oldEnd + 1 + offset;
+        const newLineIndex = newEnd + 1 + offset;
+        result.push({
+            type: "unchanged",
+            marker: " ",
+            content: oldLines[oldLineIndex],
+            lineNum: oldLineIndex + 1,
+            oldLine: oldLineIndex + 1,
+            newLine: newLineIndex + 1
+        });
+    }
     return result;
 }
 
@@ -1447,11 +2090,12 @@ async function copyCode() {
 // 完成分析后的处理
 function finishAnalysis(code) {
     state.originalCode = code;
+    state.analyzedCode = code;
     state.hasUnsavedChanges = false;
     
     // 显示编辑按钮
-    el.editCode.hidden = false;
-    el.editStatus.textContent = "";
+    el.editCode.hidden = state.isBuiltInSample;
+    el.editStatus.textContent = state.isBuiltInSample ? "官方示例 · 只读" : "";
 }
 
 // 加载 pytutor 可视化
@@ -1532,16 +2176,18 @@ async function runAnalysis() {
         dataStore = {
             heroMetrics: payload.heroMetrics || deepClone(demoData.heroMetrics),
             analysisMap: payload.analysisMap || deepClone(demoData.analysisMap),
-            suggestions: payload.suggestions && payload.suggestions.length ? payload.suggestions : deepClone(demoData.suggestions),
+            suggestions: payload.suggestions || [],
             visualizations: payload.visualizations || { ast: "", performance: "" },
             runtimeBanner: payload.runtimeBanner || null,
             meta: payload.meta || {}
         };
         
         state.activeTab = "workflow";
-        state.activeSuggestion = (dataStore.suggestions[0] && dataStore.suggestions[0].id) || demoData.suggestions[0].id;
+        state.activeSuggestion = (dataStore.suggestions[0] && dataStore.suggestions[0].id) || null;
         state.latestAnalysisTaskId = payload.meta?.taskId || null;
         
+        finishAnalysis(code);
+        resetTraceWorkspace(true);
         hideLoading();
         renderAll();
         resetChatState("分析完成。现在可以继续追问这段代码为什么这样写、热点从哪里来、先改哪一步。");
@@ -1549,14 +2195,12 @@ async function runAnalysis() {
         // 显示导航栏
         if (el.navbar) el.navbar.hidden = false;
         
-        // 停留在代码页面
-        switchToPage("code");
+        // 分析完成后进入工作台，默认先展示结果详情。
+        switchToPage("analysis");
+        setWorkspaceView("analysis");
         
-        // 完成分析处理
-        finishAnalysis(code);
-        
-        // 自动加载执行流程可视化
-        loadTutorVisualization(code);
+        // 执行流程会再次运行用户代码，改为由用户显式点击“生成执行流程”。
+        resetTutorSurface();
         
     } catch (error) {
         console.error(error);
@@ -1609,12 +2253,22 @@ function bindEvents() {
     });
     
     // 代码编辑器
-    el.sourceCode.addEventListener("input", updateLineNumbers);
+    el.sourceCode.addEventListener("input", () => {
+        updateLineNumbers();
+        if (state.analyzedCode && el.sourceCode.value.trim() !== state.analyzedCode) {
+            state.latestAnalysisTaskId = null;
+            setChatStatus("代码已修改，请重新分析后再继续追问。");
+            if (state.traceResult || state.traceSelectedFunctions.size) {
+                resetTraceWorkspace(false);
+            }
+        }
+        if (state.terminalOutputCode && el.sourceCode.value.trim() !== state.terminalOutputCode) {
+            el.terminalRunStatus.textContent = "代码已修改，请重新运行终端。";
+        }
+    });
     el.sourceCode.addEventListener("scroll", syncLineNumberScroll);
     
     // 代码页面操作
-    document.getElementById("runAnalysis").addEventListener("click", runAnalysis);
-    el.clearCode.addEventListener("click", clearCode);
     el.reloadFile.addEventListener("click", () => {
         if (state.currentCode) {
             el.sourceCode.value = state.currentCode;
@@ -1626,8 +2280,64 @@ function bindEvents() {
         const code = el.sourceCode.value.trim() || state.currentCode;
         loadTutorVisualization(code);
     });
+
+    el.executionModeTabs.addEventListener("click", (event) => {
+        const button = event.target.closest(".execution-mode-tab");
+        if (!button) return;
+        setExecutionMode(button.dataset.executionMode);
+    });
+
+    el.traceFunctionList.addEventListener("change", (event) => {
+        const input = event.target.closest("[data-trace-function]");
+        if (!input) return;
+        const functionName = input.dataset.traceFunction;
+        if (input.checked) {
+            state.traceSelectedFunctions.add(functionName);
+        } else {
+            state.traceSelectedFunctions.delete(functionName);
+        }
+        state.traceResult = null;
+        renderTraceResult();
+        el.traceStatus.textContent = state.traceSelectedFunctions.size
+            ? `已选择 ${state.traceSelectedFunctions.size} 个函数。`
+            : "请选择至少一个函数，然后开始追踪。";
+    });
+
+    el.traceExceptions.addEventListener("change", () => {
+        el.traceLocals.disabled = !el.traceExceptions.checked;
+        if (!el.traceExceptions.checked) {
+            el.traceLocals.checked = false;
+        }
+    });
+
+    el.traceViewTabs.addEventListener("click", (event) => {
+        const button = event.target.closest(".trace-view-tab");
+        if (!button) return;
+        setTraceView(button.dataset.traceView);
+    });
+
+    el.expandTraceTree.addEventListener("click", () => {
+        el.traceTreeView.querySelectorAll("details.trace-node").forEach(node => {
+            node.open = true;
+        });
+    });
+
+    el.collapseTraceTree.addEventListener("click", () => {
+        el.traceTreeView.querySelectorAll("details.trace-node").forEach(node => {
+            node.open = false;
+        });
+    });
+
+    el.runTracerTrace.addEventListener("click", runTracerTrace);
+    el.runTerminalCode.addEventListener("click", runTerminalCode);
+
+    el.backToCode.addEventListener("click", () => switchToPage("code"));
+    el.openTracer.addEventListener("click", () => {
+        switchToPage("code");
+        setExecutionMode("tracer");
+    });
     
-    // 代码页面操作
+    el.clearCode.addEventListener("click", clearCode);
     el.runAnalysis.addEventListener("click", runAnalysis);
     el.chatSend.addEventListener("click", sendChatMessage);
     el.chatStop.addEventListener("click", () => abortActiveChat("已停止当前回答。"));
@@ -1646,7 +2356,13 @@ function bindEvents() {
     el.saveEdit.addEventListener("click", saveEdit);
     el.cancelEdit.addEventListener("click", cancelEditMode);
     el.copyCode.addEventListener("click", copyCode);
-    el.clearCode.addEventListener("click", clearCode);
+
+    // 工作台一级视图
+    el.workspaceTabs.addEventListener("click", (event) => {
+        const button = event.target.closest(".workspace-tab");
+        if (!button) return;
+        setWorkspaceView(button.dataset.workspace);
+    });
     
     // 分析结果标签页
     el.resultTabs.addEventListener("click", (e) => {
@@ -1657,6 +2373,15 @@ function bindEvents() {
         btn.classList.add("is-active");
         state.activeTab = btn.dataset.tab;
         renderAnalysisTab();
+    });
+
+    el.tabBars.addEventListener("click", (e) => {
+        const button = e.target.closest("[data-function-details]");
+        if (!button) return;
+        const shouldOpen = button.dataset.functionDetails === "expand";
+        el.tabBars.querySelectorAll("details.function-signature-card").forEach(card => {
+            card.open = shouldOpen;
+        });
     });
     
     // 建议列表
@@ -1695,6 +2420,9 @@ function initApp() {
     }
     
     setTheme(state.theme);
+    setWorkspaceView(state.activeWorkspace);
+    setExecutionMode(state.activeExecutionMode);
+    setTraceView(state.traceActiveView);
     updateLineNumbers();
     bindEvents();
     applyDefaultCodeLayout(true);
