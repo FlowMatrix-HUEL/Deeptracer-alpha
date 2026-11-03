@@ -63,3 +63,21 @@
 - 递归调用。
 - 循环、字典和热点分析。
 - 可直接运行的主程序。
+
+## 9. NetBrick 深度学习
+
+DeepTracer 首页提供 NetBrick 入口，在同一 Web 服务中打开：
+
+```text
+http://127.0.0.1:8000/netbrick/
+```
+
+NetBrick 提供：
+
+- 可视化拖拽神经网络结构。
+- 多输入、多输出、并行分支和控制流。
+- Tensor Shape 与数据类型推演。
+- PyTorch/Paddle 代码生成。
+- 复合模块、课件包和结构追踪。
+
+NetBrick 只做结构教学和代码生成，不安装、执行或训练真实的 PyTorch/Paddle 模型。详细说明见 `NetBrick/doc/`。

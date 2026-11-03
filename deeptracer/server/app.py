@@ -7,11 +7,18 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from deeptracer import DEEPTRACER_DEV_ROOT
+from deeptracer.netbrick_support import get_netbrick_app, get_netbrick_dist
 from deeptracer.server.analysis_context import build_analysis_payload
 from deeptracer.server.chat_service import stream_chat_events
 from deeptracer.server.pytutor_service import (
@@ -46,6 +53,44 @@ def create_app() -> FastAPI:
             name="tutor-assets",
         )
     templates = Jinja2Templates(directory=templates_path)
+    netbrick_dist = get_netbrick_dist()
+
+    if netbrick_dist is not None:
+        try:
+            netbrick_app = get_netbrick_app()
+            for route in netbrick_app.router.routes:
+                route_path = getattr(route, "path", "")
+                if route_path.startswith("/api/v1"):
+                    app.router.routes.append(route)
+        except Exception as exc:
+            print(f"NetBrick API integration failed: {exc}")
+            netbrick_dist = None
+
+    @app.get("/netbrick", include_in_schema=False)
+    async def netbrick_redirect():
+        return RedirectResponse(url="/netbrick/", status_code=307)
+
+    @app.get("/netbrick/", response_class=HTMLResponse, include_in_schema=False)
+    async def netbrick_page():
+        if netbrick_dist is None:
+            raise HTTPException(status_code=404, detail="NetBrick frontend is unavailable.")
+        html = (netbrick_dist / "index.html").read_text(encoding="utf-8")
+        html = html.replace('"/assets/', '"/netbrick-assets/assets/')
+        html = html.replace('"/favicon.svg', '"/netbrick-assets/favicon.svg')
+        return HTMLResponse(html)
+
+    @app.get("/netbrick-assets/{asset_path:path}", include_in_schema=False)
+    async def netbrick_asset(asset_path: str):
+        if netbrick_dist is None:
+            raise HTTPException(status_code=404, detail="NetBrick frontend is unavailable.")
+        candidate = (netbrick_dist / asset_path).resolve()
+        try:
+            candidate.relative_to(netbrick_dist.resolve())
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail="Asset not found.") from exc
+        if not candidate.is_file():
+            raise HTTPException(status_code=404, detail="Asset not found.")
+        return FileResponse(candidate)
 
     @app.get("/", response_class=HTMLResponse, summary="Web workspace")
     async def index(request: Request):

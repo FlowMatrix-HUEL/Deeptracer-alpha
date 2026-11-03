@@ -309,7 +309,19 @@ body.is-loading {
     display: flex;
     gap: 16px;
     justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
     margin-bottom: 24px;
+}
+
+.netbrick-entry {
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--line) 62%);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.netbrick-entry:hover {
+    border-color: var(--accent);
 }
 
 .action-button {

@@ -1,0 +1,4645 @@
+{
+  "torch_version": "2.6.0",
+  "source": "torch.nn.__all__",
+  "classes": [
+    {
+      "class_name": "AdaptiveAvgPool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "output_size",
+          "label": "output_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "AdaptiveMaxPool1d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "output_size",
+          "label": "output_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "return_indices",
+          "label": "return_indices",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "AdaptiveMaxPool2d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "output_size",
+          "label": "output_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "return_indices",
+          "label": "return_indices",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "AdaptiveMaxPool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "output_size",
+          "label": "output_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "return_indices",
+          "label": "return_indices",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "AlphaDropout",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "p",
+          "label": "p",
+          "type": "float",
+          "default": 0.5,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "AvgPool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "ceil_mode",
+          "label": "ceil_mode",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "count_include_pad",
+          "label": "count_include_pad",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "BatchNorm3d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_features",
+          "label": "num_features",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Bilinear",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "input1",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "input2",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "in1_features",
+          "label": "in1_features",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "in2_features",
+          "label": "in2_features",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "out_features",
+          "label": "out_features",
+          "type": "int",
+          "default": 10,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "CELU",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "alpha",
+          "label": "alpha",
+          "type": "float",
+          "default": 1.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ChannelShuffle",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "CircularPad1d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "CircularPad2d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "CircularPad3d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ConstantPad1d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "value",
+          "label": "value",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ConstantPad2d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "value",
+          "label": "value",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ConstantPad3d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "value",
+          "label": "value",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Conv3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "in_channels",
+          "label": "in_channels",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ConvTranspose1d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "in_channels",
+          "label": "in_channels",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "output_padding",
+          "label": "output_padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ConvTranspose3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "in_channels",
+          "label": "in_channels",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "output_padding",
+          "label": "output_padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "CosineSimilarity",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x1",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "x2",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "dim",
+          "label": "dim",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-08,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "CrossMapLRN2d",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "size",
+          "label": "size",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "alpha",
+          "label": "alpha",
+          "type": "float",
+          "default": 0.0001,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "beta",
+          "label": "beta",
+          "type": "float",
+          "default": 0.75,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "k",
+          "label": "k",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Dropout1d",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "p",
+          "label": "p",
+          "type": "float",
+          "default": 0.5,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Dropout3d",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "p",
+          "label": "p",
+          "type": "float",
+          "default": 0.5,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "EmbeddingBag",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "offsets",
+          "required": false,
+          "call_arg": "offsets"
+        },
+        {
+          "name": "per_sample_weights",
+          "required": false,
+          "call_arg": "per_sample_weights"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0
+        },
+        {
+          "name": "offset2bag",
+          "output_index": 1,
+          "required": false
+        },
+        {
+          "name": "bag_size",
+          "output_index": 2,
+          "required": false
+        },
+        {
+          "name": "max_indices",
+          "output_index": 3,
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_embeddings",
+          "label": "num_embeddings",
+          "type": "int",
+          "default": 10,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "embedding_dim",
+          "label": "embedding_dim",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "norm_type",
+          "label": "norm_type",
+          "type": "float",
+          "default": 2.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "scale_grad_by_freq",
+          "label": "scale_grad_by_freq",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "mode",
+          "label": "mode",
+          "type": "enum",
+          "default": "mean",
+          "help": "",
+          "options": [
+            "nearest",
+            "linear",
+            "bilinear",
+            "bicubic",
+            "trilinear",
+            "area"
+          ]
+        },
+        {
+          "key": "sparse",
+          "label": "sparse",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "include_last_offset",
+          "label": "include_last_offset",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "FeatureAlphaDropout",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "p",
+          "label": "p",
+          "type": "float",
+          "default": 0.5,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Fold",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "output_size",
+          "label": "output_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "FractionalMaxPool2d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "return_indices",
+          "label": "return_indices",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "FractionalMaxPool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "return_indices",
+          "label": "return_indices",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "GLU",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "dim",
+          "label": "dim",
+          "type": "int",
+          "default": -1,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "GRU",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "hx",
+          "required": false,
+          "call_arg": "hx"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "output_index": 0
+        },
+        {
+          "name": "h_n",
+          "output_index": 1,
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "input_size",
+          "label": "input_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "hidden_size",
+          "label": "hidden_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "num_layers",
+          "label": "num_layers",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bidirectional",
+          "label": "bidirectional",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "GRUCell",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "hx",
+          "required": false,
+          "call_arg": "hx"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "h",
+          "output_index": 0
+        }
+      ],
+      "fields": [
+        {
+          "key": "input_size",
+          "label": "input_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "hidden_size",
+          "label": "hidden_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Hardshrink",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "lambd",
+          "label": "lambd",
+          "type": "float",
+          "default": 0.5,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Hardsigmoid",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Hardswish",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Hardtanh",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "min_val",
+          "label": "min_val",
+          "type": "float",
+          "default": -1.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "max_val",
+          "label": "max_val",
+          "type": "float",
+          "default": 1.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "InstanceNorm1d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_features",
+          "label": "num_features",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "InstanceNorm3d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_features",
+          "label": "num_features",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LPPool1d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "norm_type",
+          "label": "norm_type",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "ceil_mode",
+          "label": "ceil_mode",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LPPool2d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "norm_type",
+          "label": "norm_type",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "ceil_mode",
+          "label": "ceil_mode",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LPPool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "norm_type",
+          "label": "norm_type",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "ceil_mode",
+          "label": "ceil_mode",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LSTM",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "hx",
+          "required": false,
+          "call_arg": "hx"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "output_index": 0
+        },
+        {
+          "name": "h_n",
+          "output_index": 1,
+          "required": false
+        },
+        {
+          "name": "c_n",
+          "output_index": 2,
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "input_size",
+          "label": "input_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "hidden_size",
+          "label": "hidden_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "num_layers",
+          "label": "num_layers",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bidirectional",
+          "label": "bidirectional",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LSTMCell",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "hx",
+          "required": false,
+          "call_arg": "hx"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "h",
+          "output_index": 0
+        },
+        {
+          "name": "c",
+          "output_index": 1
+        }
+      ],
+      "fields": [
+        {
+          "key": "input_size",
+          "label": "input_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "hidden_size",
+          "label": "hidden_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyBatchNorm1d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyBatchNorm2d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyBatchNorm3d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyConv1d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyConv2d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyConv3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyConvTranspose1d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "output_padding",
+          "label": "output_padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyConvTranspose2d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "output_padding",
+          "label": "output_padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyConvTranspose3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_channels",
+          "label": "out_channels",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "output_padding",
+          "label": "output_padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "groups",
+          "label": "groups",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding_mode",
+          "label": "padding_mode",
+          "type": "text",
+          "default": "zeros",
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyInstanceNorm1d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyInstanceNorm2d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyInstanceNorm3d",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LazyLinear",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "out_features",
+          "label": "out_features",
+          "type": "int",
+          "default": 10,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LocalResponseNorm",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "size",
+          "label": "size",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "alpha",
+          "label": "alpha",
+          "type": "float",
+          "default": 0.0001,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "beta",
+          "label": "beta",
+          "type": "float",
+          "default": 0.75,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "k",
+          "label": "k",
+          "type": "float",
+          "default": 1.0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "LogSigmoid",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "MaxPool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "return_indices",
+          "label": "return_indices",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "ceil_mode",
+          "label": "ceil_mode",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "MaxUnpool1d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "MaxUnpool2d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "MaxUnpool3d",
+      "category": "卷积与池化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "MultiheadAttention",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "query",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "key",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "value",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "key_padding_mask",
+          "required": false,
+          "call_arg": "key_padding_mask"
+        },
+        {
+          "name": "need_weights",
+          "required": false,
+          "call_arg": "need_weights",
+          "data_type": "ScalarBool"
+        },
+        {
+          "name": "attn_mask",
+          "required": false,
+          "call_arg": "attn_mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "attn_output",
+          "output_index": 0
+        },
+        {
+          "name": "attn_weights",
+          "output_index": 1,
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "embed_dim",
+          "label": "embed_dim",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "num_heads",
+          "label": "num_heads",
+          "type": "int",
+          "default": 2,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "add_bias_kv",
+          "label": "add_bias_kv",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "add_zero_attn",
+          "label": "add_zero_attn",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "PReLU",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_parameters",
+          "label": "num_parameters",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "init",
+          "label": "init",
+          "type": "float",
+          "default": 0.25,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "PairwiseDistance",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x1",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "x2",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "p",
+          "label": "p",
+          "type": "float",
+          "default": 2.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-06,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "keepdim",
+          "label": "keepdim",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "RMSNorm",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "normalized_shape",
+          "label": "normalized_shape",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "elementwise_affine",
+          "label": "elementwise_affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "RNN",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "hx",
+          "required": false,
+          "call_arg": "hx"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "output_index": 0
+        },
+        {
+          "name": "h_n",
+          "output_index": 1,
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "input_size",
+          "label": "input_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "hidden_size",
+          "label": "hidden_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "num_layers",
+          "label": "num_layers",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bidirectional",
+          "label": "bidirectional",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "RNNCell",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "input",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "hx",
+          "required": false,
+          "call_arg": "hx"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "h",
+          "output_index": 0
+        }
+      ],
+      "fields": [
+        {
+          "key": "input_size",
+          "label": "input_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "hidden_size",
+          "label": "hidden_size",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "RReLU",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "lower",
+          "label": "lower",
+          "type": "float",
+          "default": 0.125,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "upper",
+          "label": "upper",
+          "type": "float",
+          "default": 0.3333333333333333,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ReflectionPad1d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ReflectionPad2d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ReflectionPad3d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ReplicationPad1d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ReplicationPad2d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ReplicationPad3d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "SELU",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Softmax2d",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "Softmin",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "Softplus",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "beta",
+          "label": "beta",
+          "type": "float",
+          "default": 1.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "threshold",
+          "label": "threshold",
+          "type": "float",
+          "default": 20.0,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Softshrink",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "lambd",
+          "label": "lambd",
+          "type": "float",
+          "default": 0.5,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Softsign",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "SyncBatchNorm",
+      "category": "归一化",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_features",
+          "label": "num_features",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "eps",
+          "label": "eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "momentum",
+          "label": "momentum",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "affine",
+          "label": "affine",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "track_running_stats",
+          "label": "track_running_stats",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Tanhshrink",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "Threshold",
+      "category": "激活函数",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "threshold",
+          "label": "threshold",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "value",
+          "label": "value",
+          "type": "float",
+          "default": 0.0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "inplace",
+          "label": "inplace",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Transformer",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "src",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "tgt",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "src_mask",
+          "required": false,
+          "call_arg": "src_mask"
+        },
+        {
+          "name": "tgt_mask",
+          "required": false,
+          "call_arg": "tgt_mask"
+        },
+        {
+          "name": "memory_mask",
+          "required": false,
+          "call_arg": "memory_mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "d_model",
+          "label": "d_model",
+          "type": "int",
+          "default": 512,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "nhead",
+          "label": "nhead",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "num_encoder_layers",
+          "label": "num_encoder_layers",
+          "type": "int",
+          "default": 6,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "num_decoder_layers",
+          "label": "num_decoder_layers",
+          "type": "int",
+          "default": 6,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dim_feedforward",
+          "label": "dim_feedforward",
+          "type": "int",
+          "default": 2048,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "layer_norm_eps",
+          "label": "layer_norm_eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "norm_first",
+          "label": "norm_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "TransformerDecoder",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "tgt",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "memory",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "tgt_mask",
+          "required": false,
+          "call_arg": "tgt_mask"
+        },
+        {
+          "name": "memory_mask",
+          "required": false,
+          "call_arg": "memory_mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_layers",
+          "label": "num_layers",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "TransformerDecoderLayer",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "tgt",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "memory",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "tgt_mask",
+          "required": false,
+          "call_arg": "tgt_mask"
+        },
+        {
+          "name": "memory_mask",
+          "required": false,
+          "call_arg": "memory_mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "d_model",
+          "label": "d_model",
+          "type": "int",
+          "default": 512,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "nhead",
+          "label": "nhead",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dim_feedforward",
+          "label": "dim_feedforward",
+          "type": "int",
+          "default": 2048,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "layer_norm_eps",
+          "label": "layer_norm_eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "norm_first",
+          "label": "norm_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "TransformerEncoder",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "src",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "mask",
+          "required": false,
+          "call_arg": "mask"
+        },
+        {
+          "name": "src_key_padding_mask",
+          "required": false,
+          "call_arg": "src_key_padding_mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "num_layers",
+          "label": "num_layers",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "enable_nested_tensor",
+          "label": "enable_nested_tensor",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "mask_check",
+          "label": "mask_check",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "TransformerEncoderLayer",
+      "category": "序列与注意力",
+      "inputs": [
+        {
+          "name": "src",
+          "required": true,
+          "call_arg": null
+        },
+        {
+          "name": "src_mask",
+          "required": false,
+          "call_arg": "src_mask"
+        },
+        {
+          "name": "src_key_padding_mask",
+          "required": false,
+          "call_arg": "src_key_padding_mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "d_model",
+          "label": "d_model",
+          "type": "int",
+          "default": 512,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "nhead",
+          "label": "nhead",
+          "type": "int",
+          "default": 8,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dim_feedforward",
+          "label": "dim_feedforward",
+          "type": "int",
+          "default": 2048,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dropout",
+          "label": "dropout",
+          "type": "float",
+          "default": 0.1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "layer_norm_eps",
+          "label": "layer_norm_eps",
+          "type": "float",
+          "default": 1e-05,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "batch_first",
+          "label": "batch_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "norm_first",
+          "label": "norm_first",
+          "type": "bool",
+          "default": false,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "bias",
+          "label": "bias",
+          "type": "bool",
+          "default": true,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "Unfold",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "kernel_size",
+          "label": "kernel_size",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "dilation",
+          "label": "dilation",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int",
+          "default": 0,
+          "help": "",
+          "options": null
+        },
+        {
+          "key": "stride",
+          "label": "stride",
+          "type": "int",
+          "default": 1,
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "UpsamplingBilinear2d",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "UpsamplingNearest2d",
+      "category": "其他模型层",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "class_name": "ZeroPad1d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ZeroPad2d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    },
+    {
+      "class_name": "ZeroPad3d",
+      "category": "Padding",
+      "inputs": [
+        {
+          "name": "x",
+          "required": true,
+          "call_arg": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "out",
+          "output_index": 0,
+          "required": true
+        }
+      ],
+      "fields": [
+        {
+          "key": "padding",
+          "label": "padding",
+          "type": "int_list",
+          "default": [
+            1
+          ],
+          "help": "",
+          "options": null
+        }
+      ]
+    }
+  ]
+}

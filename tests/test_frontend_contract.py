@@ -57,6 +57,8 @@ def test_execution_panel_has_tutor_tracer_and_terminal_modes():
     assert "运行终端" in TEMPLATE
     assert "/api-docs" in TEMPLATE
     assert "API 文档" in TEMPLATE
+    assert 'href="/netbrick/"' in TEMPLATE
+    assert "home-tool-copy" not in TEMPLATE
 
 
 def test_api_docs_uses_in_page_hierarchical_pages_without_scroll_navigation():

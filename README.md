@@ -13,6 +13,7 @@ DeepTracer is a local Python analysis workbench for learning, teaching, and ligh
 - **Tracer call tracing**: select functions and inspect call trees, arguments, return values, recursion, and timing.
 - **Collapsible workbench**: collapse function signatures, analysis details, suggestions, and trace nodes.
 - **AI Q&A and agents**: OpenAI-compatible integration with a complete local-only mode.
+- **NetBrick**: drag-and-drop deep-learning model learning, shape inference, and PyTorch/Paddle code generation.
 
 ## Quick Start
 
@@ -30,7 +31,7 @@ Open:
 http://127.0.0.1:8000
 ```
 
-Use the built-in sample, analyze it, then switch the right-hand runtime panel between Python Tutor, Tracer, and the run terminal. Native and library APIs are available from the `API 文档 ↗` navigation link.
+Use the **NetBrick** button on the home page for deep-learning model learning, or load Python code for analysis, Tracer, and terminal execution. Native and library APIs are available from the `API 文档 ↗` navigation link.
 
 ## Documentation
 
