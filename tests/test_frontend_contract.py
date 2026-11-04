@@ -73,7 +73,16 @@ def test_api_docs_uses_in_page_hierarchical_pages_without_scroll_navigation():
     )
 
     assert targets == pages
-    assert {"run", "analyze", "tracer", "tutor", "chat"} <= pages
+    assert {
+        "run",
+        "analyze",
+        "edit-plan",
+        "edit-apply",
+        "edit-verify",
+        "tracer",
+        "tutor",
+        "chat",
+    } <= pages
     assert {"tracer-overview", "tracer-decorator", "tracer-context"} <= pages
     assert "position: sticky" not in API_DOCS
     assert 'href="#' not in API_DOCS
@@ -85,12 +94,21 @@ def test_api_docs_uses_in_page_hierarchical_pages_without_scroll_navigation():
     assert 'button.dataset.demoTarget = target' in API_DOCS
 
 
-def test_builtin_sample_is_read_only_and_source_buttons_are_neutral():
+def test_builtin_sample_is_editable_but_resets_when_reloaded():
     assert "isBuiltInSample" in SCRIPT
-    assert "官方示例 · 只读" in SCRIPT
+    assert "内置示例 · 临时副本" in SCRIPT
+    assert "重载示例可恢复原文" in SCRIPT
+    assert "内置示例为只读" not in SCRIPT
+    assert "if (state.isBuiltInSample) {\n            loadSample();" in SCRIPT
+    assert "state.originalCode = sampleCode;" in SCRIPT
     assert 'class="action-button small primary" id="runAnalysis"' not in TEMPLATE
     assert 'class="action-button small success" id="saveEdit"' not in TEMPLATE
     assert 'class="action-button small danger" id="clearCode"' not in TEMPLATE
+
+
+def test_loaded_source_sets_the_diff_baseline_before_editing():
+    assert "state.currentCode = content;" in SCRIPT
+    assert "state.originalCode = content;" in SCRIPT
 
 
 def test_buttons_have_no_framed_outline_style():
@@ -115,3 +133,24 @@ def test_source_diff_uses_lcs_and_flame_iframe_allows_required_storage():
     assert 'sandbox", "allow-scripts allow-same-origin"' in SCRIPT
     assert "buildDiffHunks" in SCRIPT
     assert '"diff-column-head"' in SCRIPT
+
+
+def test_source_navigation_bus_connects_views_to_the_editor():
+    assert "function revealSource(" in SCRIPT
+    assert "deeptracer:reveal-source" in SCRIPT
+    assert "data-source-ref" in SCRIPT
+    assert "bindTutorStepSync" in SCRIPT
+    assert "syncTraceToTutorLine" in SCRIPT
+    assert 'id="sourceFocusStatus"' in TEMPLATE
+
+
+def test_patch_verification_diff_and_rollback_ui_are_wired():
+    assert "/api/edit/plan" in SCRIPT
+    assert "/api/edit/apply" in SCRIPT
+    assert "/api/edit/verify" in SCRIPT
+    assert "renderDiffView" in SCRIPT
+    assert "state.diffMode" in SCRIPT
+    assert "expandedDiffRanges" in SCRIPT
+    assert "rollbackLastEdit" in SCRIPT
+    assert 'id="rollbackEdit"' in TEMPLATE
+    assert 'id="verificationPanel"' in TEMPLATE

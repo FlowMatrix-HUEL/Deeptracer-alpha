@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API 文档 | DeepTracer</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}?v={{ asset_version }}">
     <style>
         .api-docs-header {
             border-bottom: 1px solid var(--line);
@@ -346,6 +346,18 @@
                         <span class="api-tree-row"><span>代码分析</span><span class="api-method">POST</span></span>
                         <small>/api/analyze</small>
                     </button>
+                    <button class="api-tree-button" data-api-target="edit-plan">
+                        <span class="api-tree-row"><span>生成 Patch</span><span class="api-method">POST</span></span>
+                        <small>/api/edit/plan</small>
+                    </button>
+                    <button class="api-tree-button" data-api-target="edit-apply">
+                        <span class="api-tree-row"><span>应用 Patch</span><span class="api-method">POST</span></span>
+                        <small>/api/edit/apply</small>
+                    </button>
+                    <button class="api-tree-button" data-api-target="edit-verify">
+                        <span class="api-tree-row"><span>验证修改</span><span class="api-method">POST</span></span>
+                        <small>/api/edit/verify</small>
+                    </button>
                     <button class="api-tree-button" data-api-target="tracer">
                         <span class="api-tree-row"><span>函数调用追踪</span><span class="api-method">POST</span></span>
                         <small>/api/tracer/trace</small>
@@ -412,7 +424,7 @@
                 <div class="api-block">
                     <h2>当前模块</h2>
                     <ul>
-                        <li><strong>DeepTracer 主库</strong>：代码运行、分析、调用追踪、Python Tutor 和答疑。</li>
+                        <li><strong>DeepTracer 主库</strong>：代码运行、分析、可验证 Patch、调用追踪、Python Tutor 和答疑。</li>
                         <li><strong>Tracer 内置库</strong>：装饰器与上下文管理器。</li>
                         <li><strong>扩展</strong>：未来原生 API 的命名、路径和安全约定。</li>
                     </ul>
@@ -479,7 +491,86 @@
                 </div>
                 <div class="api-block">
                     <h2>响应</h2>
-                    <p>返回 <code>heroMetrics</code>、<code>analysisMap</code>、<code>suggestions</code>、<code>visualizations</code>、<code>runtimeBanner</code> 和 <code>meta</code>。Agent 关闭时使用本地结果。</p>
+                    <p>返回 <code>heroMetrics</code>、<code>analysisMap</code>、<code>suggestions</code>、<code>visualizations</code>、<code>runtimeBanner</code> 和 <code>meta</code>。函数、建议锚点、性能热点和内存热点包含统一 <code>sourceRef</code>。Agent 关闭时使用本地结果。</p>
+                </div>
+            </article>
+
+            <article class="api-page" data-api-page="edit-plan" hidden>
+                <header class="api-page-header">
+                    <span class="api-endpoint"><strong>POST</strong> /api/edit/plan</span>
+                    <h1>生成修改 Patch</h1>
+                    <p>根据当前代码和一条分析建议生成带源码哈希、精确行范围和替换内容的结构化 Patch。</p>
+                </header>
+                <div class="api-block">
+                    <h2>请求</h2>
+                    <pre>{
+  "code": "...",
+  "displayName": "demo.py",
+  "allowModel": true,
+  "suggestion": {
+    "id": "reduce-print",
+    "title": "把调试输出收一收"
+  }
+}</pre>
+                    <p>简单规则修复可以在 Agent 关闭时生成；复杂语义重构需要模型辅助，或者只返回不可自动应用的原因。</p>
+                </div>
+                <div class="api-block">
+                    <h2>响应</h2>
+                    <p>可用方案返回 <code>available</code>、<code>plan</code>、<code>previewDiff</code>、<code>afterCode</code> 和 <code>afterHash</code>。每个编辑项都必须包含原代码校验文本。</p>
+                </div>
+            </article>
+
+            <article class="api-page" data-api-page="edit-apply" hidden>
+                <header class="api-page-header">
+                    <span class="api-endpoint"><strong>POST</strong> /api/edit/apply</span>
+                    <h1>校验并应用 Patch</h1>
+                    <p>验证源码哈希、原始行内容和修改范围后应用 Patch；新代码必须通过 Python 语法检查。</p>
+                </header>
+                <div class="api-block">
+                    <h2>请求</h2>
+                    <pre>{
+  "code": "print('hello')",
+  "plan": {
+    "source_hash": "sha256...",
+    "suggestion_id": "reduce-print",
+    "title": "注释调试输出",
+    "edits": [{
+      "start_line": 1,
+      "end_line": 1,
+      "expected_text": "print('hello')",
+      "replacement_text": "# print('hello')"
+    }]
+  }
+}</pre>
+                </div>
+                <div class="api-block">
+                    <h2>错误</h2>
+                    <p>源码已变化、基线片段不一致、修改范围重叠或修改后语法错误时返回 HTTP 400，不会应用部分 Patch。</p>
+                </div>
+            </article>
+
+            <article class="api-page" data-api-page="edit-verify" hidden>
+                <header class="api-page-header">
+                    <span class="api-endpoint"><strong>POST</strong> /api/edit/verify</span>
+                    <h1>比较修改前后行为</h1>
+                    <p>在独立子进程中分别运行修改前后的代码，比较退出状态、stdout、stderr 和耗时。</p>
+                </header>
+                <div class="api-block">
+                    <h2>请求</h2>
+                    <pre>{
+  "beforeCode": "print('before')",
+  "afterCode": "print('after')"
+}</pre>
+                </div>
+                <div class="api-block">
+                    <h2>行为状态</h2>
+                    <ul>
+                        <li><code>unchanged</code>：输出与退出状态一致。</li>
+                        <li><code>changed</code>：输出发生变化。</li>
+                        <li><code>improved</code>：修改前失败，修改后运行成功。</li>
+                        <li><code>regressed</code>：修改前成功，修改后运行失败。</li>
+                    </ul>
+                    <p>浏览器上传文件不携带项目绝对路径，当前自动验证是双版本 smoke test，不会假装已经运行项目测试。</p>
                 </div>
             </article>
 
@@ -506,6 +597,7 @@
                     <h2>响应</h2>
                     <ul>
                         <li><code>traceTree</code>：函数调用层级。</li>
+                        <li><code>sourceRef</code> / <code>definitionRef</code>：调用点与函数定义位置。</li>
                         <li><code>terminalOutput</code>：Tracer 终端输出，包含 ANSI 颜色。</li>
                         <li><code>statistics</code>：调用次数、总耗时、平均耗时、最小和最大耗时。</li>
                         <li><code>errors</code>：异常追踪记录。</li>
@@ -719,6 +811,58 @@ def summarize(values):
 
 print(summarize([92, -4, 68]))`,
                             displayName: "api-demo.py"
+                        })
+                    }
+                },
+                "edit-plan": {
+                    page: "edit-plan",
+                    endpoint: "/api/edit/plan",
+                    code: "print('hello')",
+                    request: {
+                        body: () => ({
+                            code: "print('hello')",
+                            displayName: "patch-demo.py",
+                            allowModel: false,
+                            suggestion: {
+                                id: "reduce-print",
+                                title: "把调试输出收一收"
+                            }
+                        })
+                    }
+                },
+                "edit-apply": {
+                    page: "edit-apply",
+                    endpoint: "/api/edit/apply",
+                    code: "print('hello')",
+                    request: {
+                        body: () => ({
+                            code: "print('hello')",
+                            plan: {
+                                source_hash: "96f43d529af3430cb6b0e2c02f6b38ef1a121e8a31d2d09a3ebb716f2f35c9de",
+                                suggestion_id: "reduce-print",
+                                title: "注释调试输出",
+                                summary: "将单行 print 注释掉。",
+                                risk: "low",
+                                confidence: "high",
+                                edits: [{
+                                    start_line: 1,
+                                    end_line: 1,
+                                    expected_text: "print('hello')",
+                                    replacement_text: "# print('hello')",
+                                    reason: "减少调试输出。"
+                                }]
+                            }
+                        })
+                    }
+                },
+                "edit-verify": {
+                    page: "edit-verify",
+                    endpoint: "/api/edit/verify",
+                    code: "print('before') → print('after')",
+                    request: {
+                        body: () => ({
+                            beforeCode: "print('before')",
+                            afterCode: "print('after')"
                         })
                     }
                 },

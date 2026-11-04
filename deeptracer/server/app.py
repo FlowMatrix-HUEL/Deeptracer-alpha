@@ -21,6 +21,11 @@ from deeptracer import DEEPTRACER_DEV_ROOT
 from deeptracer.netbrick_support import get_netbrick_app, get_netbrick_dist
 from deeptracer.server.analysis_context import build_analysis_payload
 from deeptracer.server.chat_service import stream_chat_events
+from deeptracer.server.edit_service import (
+    apply_patch_plan,
+    generate_patch_plan,
+    verify_edit_pair,
+)
 from deeptracer.server.pytutor_service import (
     execute_python_tutor_trace,
     get_pytutor_static_dir,
@@ -32,6 +37,24 @@ from deeptracer.server.tracer_service import execute_tracer_trace
 
 HOST = "127.0.0.1"
 PORT = 8000
+
+
+def _disable_html_cache(response):
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+def _asset_version(static_path: str) -> str:
+    versions = []
+    for filename in ("app.css", "app.js"):
+        candidate = os.path.join(static_path, filename)
+        try:
+            versions.append(str(os.stat(candidate).st_mtime_ns))
+        except OSError:
+            versions.append("0")
+    return "-".join(versions)
 
 
 def create_app() -> FastAPI:
@@ -95,7 +118,13 @@ def create_app() -> FastAPI:
     @app.get("/", response_class=HTMLResponse, summary="Web workspace")
     async def index(request: Request):
         try:
-            return templates.TemplateResponse(request=request, name="index.html")
+            return _disable_html_cache(
+                templates.TemplateResponse(
+                    request=request,
+                    name="index.html",
+                    context={"asset_version": _asset_version(static_path)},
+                )
+            )
         except Exception:
             return HTMLResponse(content="<h1>404 - File Not Found</h1>", status_code=404)
 
@@ -105,9 +134,12 @@ def create_app() -> FastAPI:
         summary="DeepTracer API documentation",
     )
     async def api_docs(request: Request):
-        return templates.TemplateResponse(
-            request=request,
-            name="api_docs.html",
+        return _disable_html_cache(
+            templates.TemplateResponse(
+                request=request,
+                name="api_docs.html",
+                context={"asset_version": _asset_version(static_path)},
+            )
         )
 
     @app.get("/tracer-api-docs", include_in_schema=False)
@@ -232,6 +264,66 @@ def create_app() -> FastAPI:
                 status_code=500,
                 detail=f"Run failed: {exc}",
             ) from exc
+
+    @app.post("/api/edit/plan", summary="Generate a validated source edit plan")
+    async def edit_plan(payload: dict[str, Any]):
+        code = str(payload.get("code") or "")
+        suggestion = payload.get("suggestion")
+        if not code.strip():
+            raise HTTPException(status_code=400, detail="Missing required field: code")
+        if not isinstance(suggestion, dict):
+            raise HTTPException(status_code=400, detail="suggestion must be an object")
+        try:
+            return await run_in_threadpool(
+                generate_patch_plan,
+                code,
+                suggestion,
+                display_name=str(payload.get("displayName") or "当前代码"),
+                allow_model=bool(payload.get("allowModel", True)),
+            )
+        except SyntaxError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Source code has invalid syntax: {exc}",
+            ) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Patch planning failed: {exc}",
+            ) from exc
+
+    @app.post("/api/edit/apply", summary="Validate and apply a structured source patch")
+    async def edit_apply(payload: dict[str, Any]):
+        code = str(payload.get("code") or "")
+        plan = payload.get("plan")
+        if not code.strip():
+            raise HTTPException(status_code=400, detail="Missing required field: code")
+        if not isinstance(plan, dict):
+            raise HTTPException(status_code=400, detail="plan must be an object")
+        try:
+            return await run_in_threadpool(apply_patch_plan, code, plan)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Patch application failed: {exc}",
+            ) from exc
+
+    @app.post("/api/edit/verify", summary="Compare runtime behavior before and after an edit")
+    async def edit_verify(payload: dict[str, Any]):
+        before_code = str(payload.get("beforeCode") or "")
+        after_code = str(payload.get("afterCode") or "")
+        if not before_code.strip() or not after_code.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="beforeCode and afterCode are required",
+            )
+        return await run_in_threadpool(
+            verify_edit_pair,
+            before_code,
+            after_code,
+        )
 
     @app.post("/api/tutor/trace", summary="Generate a Python Tutor trace for embedded rendering")
     async def tutor_trace(payload: dict[str, Any]):

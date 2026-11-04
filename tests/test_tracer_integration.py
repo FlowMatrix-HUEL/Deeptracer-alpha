@@ -53,6 +53,12 @@ def test_tracer_service_builds_nested_call_tree():
     assert result["traceTree"][0]["children"][0]["name"] == "chain"
     assert result["statistics"]["add"]["calls"] == 3
     assert "Function Trace Statistics Report" in result["terminalOutput"]
+    assert result["sourceHash"]
+    root = result["traceTree"][0]
+    assert root["sourceRef"]["startLine"] > 0
+    assert root["definitionRef"]["startLine"] > 0
+    assert root["sourceRef"]["sourceHash"] == result["sourceHash"]
+    assert root["sourcePrecision"] in {"call", "definition"}
 
 
 def test_trace_tree_parser_preserves_nested_returns_and_costs():

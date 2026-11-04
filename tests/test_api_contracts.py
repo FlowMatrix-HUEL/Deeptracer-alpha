@@ -144,6 +144,89 @@ def test_run_endpoint_returns_terminal_output(monkeypatch):
     assert response.json()["stdout"] == "hello\n"
 
 
+def test_edit_plan_endpoint_forwards_suggestion(monkeypatch):
+    captured = {}
+
+    def fake_generate(code, suggestion, **kwargs):
+        captured["code"] = code
+        captured["suggestion"] = suggestion
+        captured["kwargs"] = kwargs
+        return {"available": False, "reason": "needs model"}
+
+    async def immediate_threadpool(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr("deeptracer.server.app.generate_patch_plan", fake_generate)
+    monkeypatch.setattr(
+        "deeptracer.server.app.run_in_threadpool",
+        immediate_threadpool,
+    )
+
+    response = _request(
+        "POST",
+        "/api/edit/plan",
+        json={
+            "code": "print('hello')",
+            "displayName": "demo.py",
+            "suggestion": {"id": "split-function"},
+            "allowModel": False,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["available"] is False
+    assert captured["suggestion"]["id"] == "split-function"
+    assert captured["kwargs"]["allow_model"] is False
+
+
+def test_edit_apply_and_verify_endpoints(monkeypatch):
+    async def immediate_threadpool(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "deeptracer.server.app.run_in_threadpool",
+        immediate_threadpool,
+    )
+    monkeypatch.setattr(
+        "deeptracer.server.app.apply_patch_plan",
+        lambda code, plan: {
+            "code": "print('after')",
+            "afterHash": "hash",
+            "unifiedDiff": "--- before\n+++ after\n",
+        },
+    )
+    monkeypatch.setattr(
+        "deeptracer.server.app.verify_edit_pair",
+        lambda before, after: {
+            "behavior": "changed",
+            "before": {"exitCode": 0},
+            "after": {"exitCode": 0},
+        },
+    )
+
+    applied = _request(
+        "POST",
+        "/api/edit/apply",
+        json={
+            "code": "print('before')",
+            "plan": {"edits": []},
+        },
+    )
+    verified = _request(
+        "POST",
+        "/api/edit/verify",
+        json={
+            "beforeCode": "print('before')",
+            "afterCode": "print('after')",
+        },
+    )
+
+    assert applied.status_code == 200
+    assert applied.json()["code"] == "print('after')"
+    assert verified.status_code == 200
+    assert verified.json()["behavior"] == "changed"
+
+
 def test_api_docs_page_is_available():
     response = _request("GET", "/api-docs")
 
@@ -152,6 +235,18 @@ def test_api_docs_page_is_available():
     assert "DeepTracer 主库" in response.text
     assert "Tracer 内置库" in response.text
     assert "interactive_on_event" in response.text
+
+
+def test_local_frontend_assets_use_content_version_and_uncached_html():
+    html = _request("GET", "/")
+    docs = _request("GET", "/api-docs")
+
+    assert html.status_code == 200
+    assert "app.css?v=" in html.text
+    assert "app.js?v=" in html.text
+    assert "no-store" in html.headers["Cache-Control"]
+    assert "app.css?v=" in docs.text
+    assert "no-store" in docs.headers["Cache-Control"]
 
 
 def test_legacy_tracer_docs_url_redirects_to_generic_api_docs():

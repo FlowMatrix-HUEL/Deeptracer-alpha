@@ -237,6 +237,8 @@ const state = {
     isBuiltInSample: false,
     originalCode: "", // 分析前的原始代码
     analyzedCode: "",
+    sourceHash: "",
+    fileId: "editor",
     activeExecutionMode: "tutor",
     traceSelectedFunctions: new Set(),
     traceActiveView: "tree",
@@ -244,6 +246,15 @@ const state = {
     terminalOutputCode: "",
     isEditing: false,
     hasUnsavedChanges: false,
+    diffMode: "unified",
+    currentDiff: null,
+    expandedDiffRanges: new Set(),
+    editHistory: [],
+    patchPlans: new Map(),
+    patchErrors: new Map(),
+    patchBusySuggestion: "",
+    verificationResult: null,
+    tutorLastStep: null,
     latestAnalysisTaskId: null,
     chatMessages: [],
     activeChatRequestId: 0,
@@ -303,8 +314,11 @@ function initElements() {
         editCode: document.getElementById("editCode"),
         saveEdit: document.getElementById("saveEdit"),
         cancelEdit: document.getElementById("cancelEdit"),
+        rollbackEdit: document.getElementById("rollbackEdit"),
         copyCode: document.getElementById("copyCode"),
         diffViewer: document.getElementById("diffViewer"),
+        verificationPanel: document.getElementById("verificationPanel"),
+        sourceFocusStatus: document.getElementById("sourceFocusStatus"),
         syncTutor: document.getElementById("syncTutor"),
         tutorPlaceholder: document.getElementById("tutorPlaceholder"),
         tutorVisualizerMount: document.getElementById("tutorVisualizerMount"),
@@ -391,6 +405,87 @@ function switchToPage(pageName) {
 
     window.scrollTo({ top: 0, behavior: "auto" });
 }
+
+function currentSourceHash() {
+    return state.sourceHash || "";
+}
+
+function encodeSourceRef(sourceRef) {
+    return encodeURIComponent(JSON.stringify(sourceRef || {}));
+}
+
+function decodeSourceRef(token) {
+    try {
+        return JSON.parse(decodeURIComponent(token || ""));
+    } catch (error) {
+        return null;
+    }
+}
+
+function lineStartOffset(code, line) {
+    const lines = code.split("\n");
+    let offset = 0;
+    for (let index = 0; index < Math.max(0, line - 1); index += 1) {
+        offset += (lines[index] || "").length + 1;
+    }
+    return offset;
+}
+
+function revealSource(sourceRef, {
+    switchPage = true,
+    focus = true,
+    reason = ""
+} = {}) {
+    if (!sourceRef || !sourceRef.startLine) return false;
+    const activeHash = currentSourceHash();
+    if (sourceRef.sourceHash && sourceRef.sourceHash !== activeHash) {
+        el.editStatus.textContent = "定位信息已过期，请重新分析当前代码。";
+        return false;
+    }
+
+    if (switchPage) {
+        switchToPage("code");
+    }
+    const code = el.sourceCode.value;
+    const startLine = Math.max(1, Number(sourceRef.startLine) || 1);
+    const endLine = Math.max(startLine, Number(sourceRef.endLine) || startLine);
+    const startOffset = lineStartOffset(code, startLine);
+    const endOffset = Math.min(
+        code.length,
+        lineStartOffset(code, endLine) + (code.split("\n")[endLine - 1] || "").length
+    );
+    el.sourceCode.setSelectionRange(startOffset, endOffset);
+    const computed = window.getComputedStyle(el.sourceCode);
+    const lineHeight = Number.parseFloat(computed.lineHeight) || 24;
+    el.sourceCode.scrollTop = Math.max(
+        0,
+        (startLine - 1) * lineHeight - el.sourceCode.clientHeight / 2
+    );
+    el.lineNumbers.scrollTop = el.sourceCode.scrollTop;
+    if (focus) {
+        el.sourceCode.focus({ preventScroll: true });
+    }
+    const originLabel = reason || sourceRef.origin || "可视化";
+    el.sourceFocusStatus.textContent = `已定位：第 ${startLine} 行 · ${originLabel}`;
+    return true;
+}
+
+function revealSourceFromElement(element) {
+    if (!element) return;
+    const sourceRef = decodeSourceRef(element.dataset.sourceRef);
+    revealSource(sourceRef, {
+        reason: element.dataset.sourceOrigin || sourceRef?.origin || "代码定位"
+    });
+}
+
+window.addEventListener("message", (event) => {
+    const astFrame = document.querySelector("#astVizContent iframe");
+    if (!astFrame || event.source !== astFrame.contentWindow) return;
+    if (event.data?.type !== "deeptracer:reveal-source") return;
+    revealSource(event.data.sourceRef, {
+        reason: "AST 节点"
+    });
+});
 
 function setWorkspaceView(workspaceName) {
     const target = document.querySelector(`[data-workspace-panel="${workspaceName}"]`);
@@ -548,12 +643,18 @@ function renderTraceNode(node) {
         : node.returned != null
             ? `<div class="trace-node-return">返回：${escapeHtml(node.returned)}</div>`
             : `<div class="trace-node-return">未返回</div>`;
+    const sourceButton = node.sourceRef
+        ? `<button class="text-button source-jump" type="button"
+                data-source-ref="${encodeSourceRef(node.sourceRef)}"
+                data-source-origin="Tracer">定位源码</button>`
+        : "";
     return `
-        <details class="trace-node" open>
+        <details class="trace-node" open id="${escapeHtml(node.id || "")}">
             <summary class="trace-node-head">
                 <span class="disclosure-chevron" aria-hidden="true"></span>
                 <strong>→ ${escapeHtml(node.name)}</strong>
                 ${cost}
+                ${sourceButton}
             </summary>
             <div class="trace-node-body">
                 <div class="trace-node-arguments">${escapeHtml(node.argumentText || node.arguments || "()")}</div>
@@ -1281,6 +1382,7 @@ function renderAnalysisTab() {
     const cards = tab.cards || [];
     const bars = tab.bars || [];
     const functions = tab.functions || [];
+    const hotspots = tab.hotspots || [];
 
     el.tabSummary.innerHTML = `
         <h3>${escapeHtml(tab.title || "")}</h3>
@@ -1315,6 +1417,32 @@ function renderAnalysisTab() {
                 </div>
             `;
         }).join("")
+        : "";
+
+    const hotspotsHtml = hotspots.length
+        ? `
+            <div class="hotspot-list">
+                <div class="hotspot-list-head">
+                    <h4>可定位热点</h4>
+                    <span>点击后跳到源代码中的对应位置</span>
+                </div>
+                ${hotspots.map(hotspot => `
+                    <button class="hotspot-item" type="button"
+                        data-source-ref="${encodeSourceRef(hotspot.sourceRef)}"
+                        data-source-origin="${escapeHtml(hotspot.sourceRef?.origin || "performance")}">
+                        <span>
+                            <strong>${escapeHtml(hotspot.label || "热点")}</strong>
+                            <small>第 ${escapeHtml(hotspot.line || "?")} 行</small>
+                        </span>
+                        <span class="hotspot-metric">
+                            ${hotspot.totalMs != null
+                                ? `${Number(hotspot.totalMs).toFixed(2)} ms`
+                                : `${Number(hotspot.sizeKb || 0).toFixed(1)} KB`}
+                        </span>
+                    </button>
+                `).join("")}
+            </div>
+        `
         : "";
 
     const functionsHtml = functions.length
@@ -1352,6 +1480,11 @@ function renderAnalysisTab() {
                                 </span>
                                 <span class="function-signature-meta">
                                     第 ${escapeHtml(fn.lineno)} 行
+                                    ${fn.sourceRef
+                                        ? `<button class="text-button source-jump" type="button"
+                                                data-source-ref="${encodeSourceRef(fn.sourceRef)}"
+                                                data-source-origin="函数签名">定位</button>`
+                                        : ""}
                                     <span class="disclosure-chevron" aria-hidden="true"></span>
                                 </span>
                             </summary>
@@ -1365,7 +1498,7 @@ function renderAnalysisTab() {
         `
         : "";
 
-    el.tabBars.innerHTML = cardsHtml + barsHtml + functionsHtml;
+    el.tabBars.innerHTML = cardsHtml + barsHtml + hotspotsHtml + functionsHtml;
 
     el.tabPoints.innerHTML = (tab.points || []).map(p => `
         <div class="notes-item">${escapeHtml(p)}</div>
@@ -1394,6 +1527,9 @@ function renderSuggestionDetail() {
     }
     const detail = suggestion.detail || {};
     const anchors = detail.codeAnchors || suggestion.anchors || [];
+    const patchResult = state.patchPlans.get(suggestion.id);
+    const patchError = state.patchErrors.get(suggestion.id);
+    const patchBusy = state.patchBusySuggestion === suggestion.id;
     const anchorHtml = anchors.length
         ? `
             <div class="suggestion-anchor-list">
@@ -1403,6 +1539,11 @@ function renderSuggestionDetail() {
                             <span class="suggestion-anchor-kind">${escapeHtml(anchor.kind || "anchor")}</span>
                             <strong>${escapeHtml(anchor.label || "未命名位置")}</strong>
                             ${anchor.line ? `<span class="suggestion-anchor-line">第 ${anchor.line} 行</span>` : ""}
+                            ${anchor.sourceRef
+                                ? `<button class="text-button source-jump" type="button"
+                                        data-source-ref="${encodeSourceRef(anchor.sourceRef)}"
+                                        data-source-origin="建议锚点">定位源码</button>`
+                                : ""}
                         </div>
                         ${anchor.snippet ? `<pre class="suggestion-anchor-snippet"><code>${escapeHtml(anchor.snippet)}</code></pre>` : ""}
                     </article>
@@ -1410,6 +1551,59 @@ function renderSuggestionDetail() {
             </div>
         `
         : '<div class="suggestion-empty">当前没有可展示的代码锚点。</div>';
+
+    let patchHtml = "";
+    if (patchResult?.available) {
+        const plan = patchResult.plan || {};
+        const modeLabel = patchResult.generationMode === "model-assisted"
+            ? "模型辅助"
+            : "本地规则";
+        patchHtml = `
+            <section class="patch-panel">
+                <div class="patch-panel-head">
+                    <div>
+                        <h4>可应用 Patch</h4>
+                        <p>${escapeHtml(plan.summary || plan.title || "已生成经过结构校验的修改方案。")}</p>
+                    </div>
+                    <span class="patch-risk">${modeLabel} · 风险：${escapeHtml(plan.risk || "-")}</span>
+                </div>
+                <pre class="patch-preview"><code>${escapeHtml(patchResult.previewDiff || "")}</code></pre>
+                <div class="inline-actions">
+                    <button class="action-button small primary" type="button"
+                        data-suggestion-action="apply-patch"
+                        data-suggestion-id="${escapeHtml(suggestion.id)}">应用并验证</button>
+                    <button class="text-button" type="button"
+                        data-suggestion-action="clear-patch"
+                        data-suggestion-id="${escapeHtml(suggestion.id)}">取消方案</button>
+                </div>
+            </section>
+        `;
+    } else if (patchResult && !patchResult.available) {
+        patchHtml = `
+            <section class="patch-panel">
+                <h4>无法安全自动生成 Patch</h4>
+                <p class="patch-note">${escapeHtml(patchResult.reason || "该建议需要人工判断。")}</p>
+            </section>
+        `;
+    } else {
+        patchHtml = `
+            <section class="patch-panel">
+                <div class="patch-panel-head">
+                    <div>
+                        <h4>从建议生成修改</h4>
+                        <p>先生成结构化 Patch，预览后再决定是否应用。</p>
+                    </div>
+                    <button class="action-button small primary" type="button"
+                        data-suggestion-action="generate-patch"
+                        data-suggestion-id="${escapeHtml(suggestion.id)}"
+                        ${patchBusy ? "disabled" : ""}>
+                        ${patchBusy ? "正在生成..." : "生成 Patch"}
+                    </button>
+                </div>
+                ${patchError ? `<p class="patch-error">${escapeHtml(patchError)}</p>` : ""}
+            </section>
+        `;
+    }
 
     el.suggestionDetail.innerHTML = `
         <h3>${escapeHtml(suggestion.title)}</h3>
@@ -1432,6 +1626,207 @@ function renderSuggestionDetail() {
         <section class="suggestion-detail-card">
             <h4>它对应代码里的哪个位置</h4>
             ${anchorHtml}
+        </section>
+        ${patchHtml}
+    `;
+}
+
+async function generateSuggestionPatch(suggestionId) {
+    const suggestion = (dataStore.suggestions || []).find(item => item.id === suggestionId);
+    if (!suggestion) return;
+    if (
+        state.analyzedCode &&
+        el.sourceCode.value.trim() !== state.analyzedCode
+    ) {
+        state.patchErrors.set(suggestionId, "代码已经修改，请先重新分析再生成 Patch。");
+        renderSuggestionDetail();
+        return;
+    }
+
+    state.patchBusySuggestion = suggestionId;
+    state.patchErrors.delete(suggestionId);
+    renderSuggestionDetail();
+    try {
+        const response = await fetch("/api/edit/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                code: el.sourceCode.value,
+                displayName: currentDisplayName(),
+                suggestion,
+                allowModel: true
+            })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.detail || `HTTP ${response.status}`);
+        }
+        state.patchPlans.set(suggestionId, payload);
+    } catch (error) {
+        state.patchErrors.set(suggestionId, `Patch 生成失败：${error.message}`);
+    } finally {
+        state.patchBusySuggestion = "";
+        renderSuggestionDetail();
+    }
+}
+
+function pushEditSnapshot(label, code = el.sourceCode.value) {
+    state.editHistory.push({
+        code,
+        dataStore: deepClone(dataStore),
+        sourceHash: state.sourceHash || dataStore.meta?.sourceHash || "",
+        latestAnalysisTaskId: state.latestAnalysisTaskId,
+        traceResult: state.traceResult ? deepClone(state.traceResult) : null,
+        traceSelectedFunctions: [...state.traceSelectedFunctions],
+        terminalOutputCode: state.terminalOutputCode,
+        label,
+        createdAt: new Date().toISOString()
+    });
+    if (state.editHistory.length > 10) {
+        state.editHistory.shift();
+    }
+    updateRollbackButton();
+}
+
+function updateRollbackButton() {
+    if (!el.rollbackEdit) return;
+    el.rollbackEdit.hidden = state.editHistory.length === 0;
+}
+
+async function applySuggestionPatch(suggestionId) {
+    const patchResult = state.patchPlans.get(suggestionId);
+    if (!patchResult?.available || !patchResult.plan) return;
+    const beforeCode = el.sourceCode.value;
+    el.editStatus.textContent = "正在校验并应用 Patch...";
+    try {
+        const response = await fetch("/api/edit/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                code: beforeCode,
+                plan: patchResult.plan
+            })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.detail || `HTTP ${response.status}`);
+        }
+
+        pushEditSnapshot(`应用 Patch：${patchResult.plan.title || suggestionId}`);
+        applyPatchedCode(payload.code, {
+            beforeCode,
+            afterHash: payload.afterHash,
+            label: patchResult.plan.title || suggestionId
+        });
+        await verifyAppliedEdit(beforeCode, payload.code);
+    } catch (error) {
+        el.editStatus.textContent = `Patch 应用失败：${error.message}`;
+        state.patchPlans.delete(suggestionId);
+        state.patchErrors.set(suggestionId, `Patch 应用失败：${error.message}`);
+        renderSuggestionDetail();
+    }
+}
+
+function applyPatchedCode(nextCode, { beforeCode, afterHash, label = "自动修改" }) {
+    el.sourceCode.value = nextCode;
+    state.currentCode = nextCode;
+    state.originalCode = beforeCode;
+    state.analyzedCode = "";
+    state.sourceHash = "";
+    state.latestAnalysisTaskId = null;
+    state.hasUnsavedChanges = true;
+    state.isEditing = false;
+    el.sourceCode.readOnly = true;
+    el.sourceCode.hidden = true;
+    el.diffViewer.hidden = false;
+    el.editCode.hidden = true;
+    el.saveEdit.hidden = true;
+    el.cancelEdit.hidden = true;
+    el.editStatus.textContent = state.isBuiltInSample
+        ? `${label} · 示例副本已修改，重载示例可恢复原文`
+        : `${label} · 已修改，等待重新分析`;
+    updateLineNumbers();
+    resetTraceWorkspace(false);
+    resetTerminalOutput();
+    resetChatState("代码已通过 Patch 修改，请重新分析后再继续追问。");
+    showDiff(beforeCode, nextCode, { afterHash });
+    switchToPage("code");
+}
+
+async function verifyAppliedEdit(beforeCode, afterCode) {
+    if (!el.verificationPanel) return;
+    el.verificationPanel.hidden = false;
+    el.verificationPanel.innerHTML = `
+        <div class="verification-loading">正在分别运行修改前后的代码并比较行为...</div>
+    `;
+    try {
+        const response = await fetch("/api/edit/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ beforeCode, afterCode })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.detail || `HTTP ${response.status}`);
+        }
+        state.verificationResult = payload;
+        renderVerification(payload);
+    } catch (error) {
+        state.verificationResult = null;
+        el.verificationPanel.innerHTML = `
+            <div class="patch-error">自动验证失败：${escapeHtml(error.message)}</div>
+        `;
+    }
+}
+
+function renderVerification(result) {
+    if (!el.verificationPanel) return;
+    const behaviorLabels = {
+        unchanged: "行为未变化",
+        changed: "输出发生变化",
+        improved: "运行时错误已修复",
+        regressed: "修改后出现运行错误"
+    };
+    const behavior = result.behavior || "changed";
+    const before = result.before || {};
+    const after = result.after || {};
+    el.verificationPanel.hidden = false;
+    el.verificationPanel.innerHTML = `
+        <div class="verification-head">
+            <div>
+                <span class="analysis-eyebrow">Verification</span>
+                <h3>修改前后验证</h3>
+            </div>
+            <strong class="verification-status is-${escapeHtml(behavior)}">
+                ${escapeHtml(behaviorLabels[behavior] || behavior)}
+            </strong>
+        </div>
+        <div class="verification-grid">
+            ${renderVerificationRun("修改前", before)}
+            ${renderVerificationRun("修改后", after)}
+        </div>
+        <div class="verification-meta">
+            <span>语法：${result.syntax?.passed ? "通过" : "失败"}</span>
+            <span>运行：${result.runtime?.passed ? "通过" : "失败"}</span>
+            <span>耗时变化：${Number(result.performance?.durationDeltaMs || 0).toFixed(2)} ms</span>
+        </div>
+        <p class="patch-note">${escapeHtml(result.tests?.note || "")}</p>
+    `;
+}
+
+function renderVerificationRun(label, result) {
+    const output = [
+        result.stdout || "",
+        result.stderr ? `[stderr]\n${result.stderr}` : "",
+        result.runtimeError ? `[error]\n${result.runtimeError}` : ""
+    ].filter(Boolean).join("\n") || "(无输出)";
+    return `
+        <section class="verification-run">
+            <div class="verification-run-head">
+                <strong>${escapeHtml(label)}</strong>
+                <span>exit ${escapeHtml(String(result.exitCode ?? "-"))} · ${Number(result.durationMs || 0).toFixed(2)} ms</span>
+            </div>
+            <pre>${escapeHtml(output)}</pre>
         </section>
     `;
 }
@@ -1476,12 +1871,39 @@ function renderVisualizations() {
         iframe.style.border = "none";
         // PyInstrument persists its view state in localStorage/sessionStorage.
         iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
-        el.perfVizContent.innerHTML = "";
+        el.perfVizContent.innerHTML = renderVisualizationHotspots(
+            dataStore.analysisMap?.performance?.hotspots || []
+        );
         el.perfVizContent.appendChild(iframe);
         iframe.srcdoc = sanitizeVisualizationHtml(viz.performance);
     } else {
-        el.perfVizContent.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--muted);">性能分析可视化生成失败或不可用</p>';
+        el.perfVizContent.innerHTML = `
+            ${renderVisualizationHotspots(dataStore.analysisMap?.performance?.hotspots || [])}
+            <p style="padding: 20px; text-align: center; color: var(--muted);">性能分析可视化生成失败或不可用</p>
+        `;
     }
+}
+
+function renderVisualizationHotspots(hotspots) {
+    if (!hotspots.length) {
+        return `
+            <div class="viz-hotspot-empty">
+                当前没有可定位的性能样本；火焰图仍会保留用于查看可用的采样数据。
+            </div>
+        `;
+    }
+    return `
+        <div class="viz-hotspot-bar">
+            <span>热点定位</span>
+            ${hotspots.map(hotspot => `
+                <button type="button" class="viz-hotspot-jump"
+                    data-source-ref="${encodeSourceRef(hotspot.sourceRef)}"
+                    data-source-origin="性能火焰图">
+                    ${escapeHtml(hotspot.label)} · 第 ${escapeHtml(hotspot.line)} 行
+                </button>
+            `).join("")}
+        </div>
+    `;
 }
 
 // 渲染所有内容
@@ -1643,6 +2065,102 @@ function reflowTutorVisualizer() {
     });
 }
 
+function bindTutorStepSync() {
+    const visualizer = currentTutorVisualizer;
+    if (!visualizer || visualizer.__deepTracerStepBound) return;
+    visualizer.__deepTracerStepBound = true;
+    const originalRenderStep = visualizer.renderStep;
+    if (typeof originalRenderStep !== "function") return;
+    visualizer.renderStep = function patchedRenderStep(step, ...args) {
+        const result = originalRenderStep.call(this, step, ...args);
+        publishTutorStep(step);
+        return result;
+    };
+    if (Number.isFinite(visualizer.curInstr)) {
+        publishTutorStep(visualizer.curInstr);
+    }
+}
+
+function publishTutorStep(step) {
+    const visualizer = currentTutorVisualizer;
+    const trace = visualizer?.curTrace || [];
+    const entry = trace[step];
+    if (!entry?.line) return;
+    state.tutorLastStep = {
+        step,
+        line: entry.line,
+        event: entry.event || ""
+    };
+    const sourceRef = {
+        fileId: state.fileId || "editor",
+        sourceHash: currentSourceHash(),
+        startLine: entry.line,
+        endLine: entry.line,
+        symbol: entry.func_name || entry.event || null,
+        origin: "tutor",
+        stepIndex: step
+    };
+    const located = revealSource(sourceRef, {
+        switchPage: false,
+        focus: false,
+        reason: `Python Tutor 第 ${step} 步`
+    });
+    if (located) {
+        syncTraceToTutorLine(entry.line);
+    }
+}
+
+function findDeepestTraceNodeForLine(nodes, line) {
+    let best = null;
+    const visit = (node) => {
+        const sourceRef = node.definitionRef || node.sourceRef;
+        if (
+            sourceRef?.startLine &&
+            line >= Number(sourceRef.startLine) &&
+            line <= Number(sourceRef.endLine || sourceRef.startLine)
+        ) {
+            if (
+                !best ||
+                Number(sourceRef.endLine || sourceRef.startLine) -
+                    Number(sourceRef.startLine) <
+                    Number(
+                        (best.definitionRef || best.sourceRef).endLine ||
+                        (best.definitionRef || best.sourceRef).startLine
+                    ) -
+                    Number((best.definitionRef || best.sourceRef).startLine)
+            ) {
+                best = node;
+            }
+        }
+        (node.children || []).forEach(visit);
+    };
+    (nodes || []).forEach(visit);
+    return best;
+}
+
+function syncTraceToTutorLine(line) {
+    if (!el.traceTreeView || !state.traceResult?.traceTree) return;
+    el.traceTreeView.querySelectorAll(".trace-node.is-source-active").forEach(node => {
+        node.classList.remove("is-source-active");
+    });
+    const match = findDeepestTraceNodeForLine(state.traceResult.traceTree, line);
+    if (!match?.id) return;
+    const details = document.getElementById(match.id);
+    if (!details) return;
+    let parent = details.parentElement?.closest("details.trace-node");
+    while (parent) {
+        parent.open = true;
+        parent = parent.parentElement?.closest("details.trace-node");
+    }
+    details.open = true;
+    details.classList.add("is-source-active");
+    const paneBounds = el.traceTreeView.getBoundingClientRect();
+    const nodeBounds = details.getBoundingClientRect();
+    if (nodeBounds.top < paneBounds.top || nodeBounds.bottom > paneBounds.bottom) {
+        el.traceTreeView.scrollTop += nodeBounds.top - paneBounds.top - 20;
+    }
+}
+
 // 拖拽调节大小
 function initResizeHandler() {
     const handle = el.resizeHandle;
@@ -1699,19 +2217,43 @@ function initResizeHandler() {
     });
 }
 
+function resetEditWorkspace() {
+    state.sourceHash = "";
+    state.fileId = "editor";
+    state.currentDiff = null;
+    state.expandedDiffRanges = new Set();
+    state.editHistory = [];
+    state.patchPlans = new Map();
+    state.patchErrors = new Map();
+    state.patchBusySuggestion = "";
+    state.verificationResult = null;
+    state.isEditing = false;
+    state.hasUnsavedChanges = false;
+    el.sourceCode.hidden = false;
+    el.diffViewer.hidden = true;
+    el.verificationPanel.hidden = true;
+    el.verificationPanel.innerHTML = "";
+    el.sourceFocusStatus.textContent = "";
+    el.saveEdit.hidden = true;
+    el.cancelEdit.hidden = true;
+    updateRollbackButton();
+}
+
 // 载入示例代码
 function loadSample() {
+    resetEditWorkspace();
     el.sourceCode.value = sampleCode;
-    state.currentFileName = "示例代码 · 只读";
+    state.currentFileName = "内置示例 · 临时副本";
     state.currentCode = sampleCode;
+    state.originalCode = sampleCode;
     state.isBuiltInSample = true;
     state.analyzedCode = "";
     resetTraceWorkspace(false);
     resetTerminalOutput();
     updateLineNumbers();
     el.fileName.textContent = state.currentFileName;
-    el.editStatus.textContent = "官方示例 · 只读";
-    resetChatState("示例已载入。分析后你可以继续追问，也可以直接用这段代码开始对话。");
+    el.editStatus.textContent = "内置示例 · 修改仅在本次打开期间保留";
+    resetChatState("示例副本已载入。可以编辑和测试；重新载入示例或刷新页面会恢复原始代码。");
     
     // 显示导航栏
     if (el.navbar) el.navbar.hidden = false;
@@ -1723,9 +2265,11 @@ function loadSample() {
 // 清空代码
 function clearCode() {
     abortActiveChat("");
+    resetEditWorkspace();
     el.sourceCode.value = "";
     state.currentFileName = "未命名";
     state.currentCode = "";
+    state.originalCode = "";
     state.isBuiltInSample = false;
     state.analyzedCode = "";
     resetTraceWorkspace(false);
@@ -1750,9 +2294,11 @@ async function handleFileSelect(event) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const content = e.target.result;
+            resetEditWorkspace();
             el.sourceCode.value = content;
             state.currentFileName = file.name;
             state.currentCode = content;
+            state.originalCode = content;
             state.isBuiltInSample = false;
             state.analyzedCode = "";
             resetTraceWorkspace(false);
@@ -1796,10 +2342,6 @@ function hideLoading() {
 
 // 启用编辑模式
 function enableEditMode() {
-    if (state.isBuiltInSample) {
-        el.editStatus.textContent = "官方示例为只读；请载入自己的 .py 文件后再编辑。";
-        return;
-    }
     state.isEditing = true;
     el.sourceCode.readOnly = false;
     el.sourceCode.hidden = false;
@@ -1822,7 +2364,10 @@ function cancelEditMode() {
     el.editCode.hidden = false;
     el.saveEdit.hidden = true;
     el.cancelEdit.hidden = true;
-    el.editStatus.textContent = "";
+    el.editStatus.textContent = state.isBuiltInSample
+        ? "内置示例 · 修改仅在本次打开期间保留"
+        : "";
+    state.sourceHash = dataStore.meta?.sourceHash || "";
     updateLineNumbers();
 }
 
@@ -1833,7 +2378,8 @@ function saveEdit() {
         cancelEditMode();
         return;
     }
-    
+
+    pushEditSnapshot("手动编辑", state.originalCode);
     state.currentCode = newCode;
     state.hasUnsavedChanges = true;
     resetTraceWorkspace(false);
@@ -1847,49 +2393,139 @@ function saveEdit() {
     el.editCode.hidden = true;
     el.saveEdit.hidden = true;
     el.cancelEdit.hidden = false;
-    el.editStatus.textContent = "已修改（未保存分析）";
+    el.editStatus.textContent = state.isBuiltInSample
+        ? "内置示例副本已修改 · 重载示例可恢复原文"
+        : "已修改（未保存分析）";
+}
+
+function rollbackLastEdit() {
+    const snapshot = state.editHistory.pop();
+    if (!snapshot) return;
+    dataStore = deepClone(snapshot.dataStore || dataStore);
+    state.sourceHash = snapshot.sourceHash || dataStore.meta?.sourceHash || "";
+    state.latestAnalysisTaskId = snapshot.latestAnalysisTaskId || null;
+    state.traceResult = snapshot.traceResult ? deepClone(snapshot.traceResult) : null;
+    state.traceSelectedFunctions = new Set(snapshot.traceSelectedFunctions || []);
+    state.terminalOutputCode = snapshot.terminalOutputCode || "";
+    state.currentCode = snapshot.code;
+    state.originalCode = snapshot.code;
+    state.analyzedCode = snapshot.code;
+    state.hasUnsavedChanges = false;
+    state.verificationResult = null;
+    el.sourceCode.value = snapshot.code;
+    el.sourceCode.readOnly = true;
+    el.sourceCode.hidden = false;
+    el.diffViewer.hidden = true;
+    el.verificationPanel.hidden = true;
+    el.verificationPanel.innerHTML = "";
+    el.sourceFocusStatus.textContent = "";
+    el.editCode.hidden = false;
+    el.saveEdit.hidden = true;
+    el.cancelEdit.hidden = true;
+    el.editStatus.textContent = `已回滚：${snapshot.label || "最近修改"}`;
+    updateLineNumbers();
+    updateRollbackButton();
+    renderAll();
+    switchToPage("code");
 }
 
 // 显示 Diff 对比
-function showDiff(oldCode, newCode) {
+function showDiff(oldCode, newCode, { afterHash = "" } = {}) {
+    if (el.verificationPanel) {
+        el.verificationPanel.hidden = true;
+        el.verificationPanel.innerHTML = "";
+    }
     const oldLines = oldCode.split("\n");
     const newLines = newCode.split("\n");
     const diff = computeSimpleDiff(oldLines, newLines);
-    const displayRows = buildDiffHunks(diff);
+    state.currentDiff = { oldCode, newCode, afterHash, diff };
+    state.expandedDiffRanges = new Set();
+    renderDiffView();
+}
+
+function renderDiffView() {
+    if (!state.currentDiff) return;
+    const { diff } = state.currentDiff;
     const added = diff.filter(line => line.type === "added").length;
     const removed = diff.filter(line => line.type === "removed").length;
+    const viewLabel = state.diffMode === "split" ? "并排 Diff" : "统一 Diff";
+    const controls = `
+        <div class="diff-actions">
+            <button class="text-button" type="button" data-diff-action="toggle-mode">
+                切换为${state.diffMode === "split" ? "统一" : "并排"}
+            </button>
+            ${state.editHistory.length
+                ? '<button class="text-button danger-text" type="button" data-diff-action="rollback">回滚最近修改</button>'
+                : ""}
+        </div>
+    `;
+    const displayRows = buildDiffHunks(
+        diff,
+        3,
+        state.expandedDiffRanges
+    );
+
+    const unifiedHtml = displayRows.map(line => line.type === "collapsed" ? `
+        <button class="diff-collapsed" type="button"
+            data-diff-action="expand"
+            data-diff-range="${line.start}:${line.end}">
+            <span>···</span>
+            <span>展开 ${line.skipped} 行未修改内容</span>
+        </button>
+    ` : `
+        <div class="diff-line ${line.type}">
+            <span class="diff-old-num">${line.oldLine ?? ""}</span>
+            <span class="diff-new-num">${line.newLine ?? ""}</span>
+            <span class="diff-marker">${line.marker}</span>
+            <code class="diff-content">${escapeHtml(line.content)}</code>
+        </div>
+    `).join("");
+
+    const splitHtml = state.diffMode === "split"
+        ? buildSplitDiffRows(displayRows).map(line => {
+            if (line.type === "collapsed") {
+                return `
+                    <button class="diff-collapsed split-collapsed" type="button"
+                        data-diff-action="expand"
+                        data-diff-range="${line.start}:${line.end}">
+                        展开 ${line.skipped} 行未修改内容
+                    </button>
+                `;
+            }
+            return renderSplitDiffPair(line.left, line.right);
+        }).join("")
+        : "";
 
     el.diffViewer.innerHTML = `
         <div class="diff-header">
-            <strong>统一 Diff</strong>
-            <span class="diff-stats">
-                <span class="diff-added-count">+${added}</span>
-                <span class="diff-removed-count">-${removed}</span>
-            </span>
-        </div>
-        <div class="diff-column-head">
-            <span>旧版本</span>
-            <span>新版本</span>
-            <span></span>
-            <span>代码</span>
-        </div>
-        ${displayRows.map(line => line.type === "collapsed" ? `
-            <div class="diff-collapsed">
-                <span>···</span>
-                <span>已折叠 ${line.skipped} 行未修改内容</span>
+            <div>
+                <strong>${viewLabel}</strong>
+                <span class="diff-stats">
+                    <span class="diff-added-count">+${added}</span>
+                    <span class="diff-removed-count">-${removed}</span>
+                </span>
             </div>
+            ${controls}
+        </div>
+        ${state.diffMode === "split" ? `
+            <div class="diff-split-head">
+                <span>修改前</span>
+                <span>修改后</span>
+            </div>
+            <div class="diff-split">${splitHtml}</div>
         ` : `
-            <div class="diff-line ${line.type}">
-                <span class="diff-old-num">${line.oldLine ?? ""}</span>
-                <span class="diff-new-num">${line.newLine ?? ""}</span>
-                <span class="diff-marker">${line.marker}</span>
-                <code class="diff-content">${escapeHtml(line.content)}</code>
+            <div class="diff-column-head">
+                <span>旧版本</span>
+                <span>新版本</span>
+                <span></span>
+                <span>代码</span>
             </div>
-        `).join("")}
+            ${unifiedHtml}
+        `}
     `;
 }
 
-function buildDiffHunks(diff, context = 3) {
+function buildDiffHunks(diff, context = 3, expandedRanges = new Set()) {
     const changed = [];
     diff.forEach((line, index) => {
         if (line.type !== "unchanged") changed.push(index);
@@ -1912,15 +2548,111 @@ function buildDiffHunks(diff, context = 3) {
     let cursor = 0;
     for (const range of ranges) {
         if (range.start > cursor) {
-            rows.push({ type: "collapsed", skipped: range.start - cursor });
+            const collapsed = {
+                type: "collapsed",
+                start: cursor,
+                end: range.start,
+                skipped: range.start - cursor
+            };
+            if (expandedRanges.has(`${collapsed.start}:${collapsed.end}`)) {
+                rows.push(...diff.slice(collapsed.start, collapsed.end));
+            } else {
+                rows.push(collapsed);
+            }
         }
         rows.push(...diff.slice(range.start, range.end));
         cursor = range.end;
     }
     if (cursor < diff.length) {
-        rows.push({ type: "collapsed", skipped: diff.length - cursor });
+        const collapsed = {
+            type: "collapsed",
+            start: cursor,
+            end: diff.length,
+            skipped: diff.length - cursor
+        };
+        if (expandedRanges.has(`${collapsed.start}:${collapsed.end}`)) {
+            rows.push(...diff.slice(collapsed.start, collapsed.end));
+        } else {
+            rows.push(collapsed);
+        }
     }
     return rows;
+}
+
+function buildSplitDiffRows(displayRows) {
+    const rows = [];
+    let index = 0;
+    while (index < displayRows.length) {
+        const line = displayRows[index];
+        if (line.type === "collapsed") {
+            rows.push(line);
+            index += 1;
+            continue;
+        }
+        if (line.type === "unchanged") {
+            rows.push({ type: "unchanged", left: line, right: line });
+            index += 1;
+            continue;
+        }
+        const removed = [];
+        const added = [];
+        while (index < displayRows.length && displayRows[index].type === "removed") {
+            removed.push(displayRows[index]);
+            index += 1;
+        }
+        while (index < displayRows.length && displayRows[index].type === "added") {
+            added.push(displayRows[index]);
+            index += 1;
+        }
+        const pairCount = Math.max(removed.length, added.length);
+        for (let pairIndex = 0; pairIndex < pairCount; pairIndex += 1) {
+            rows.push({
+                type: "changed",
+                left: removed[pairIndex] || null,
+                right: added[pairIndex] || null
+            });
+        }
+    }
+    return rows;
+}
+
+function renderSplitDiffPair(left, right) {
+    const leftCell = left
+        ? `
+            <div class="diff-split-cell removed">
+                <span class="diff-old-num">${left.oldLine}</span>
+                <code>${escapeHtml(left.content)}</code>
+            </div>
+        `
+        : '<div class="diff-split-cell empty"></div>';
+    const rightCell = right
+        ? `
+            <div class="diff-split-cell added">
+                <span class="diff-new-num">${right.newLine}</span>
+                <code>${escapeHtml(right.content)}</code>
+            </div>
+        `
+        : '<div class="diff-split-cell empty"></div>';
+    if (left?.type === "unchanged" && right?.type === "unchanged") {
+        return `
+            <div class="diff-split-row unchanged">
+                <div class="diff-split-cell">
+                    <span class="diff-old-num">${left.oldLine}</span>
+                    <code>${escapeHtml(left.content)}</code>
+                </div>
+                <div class="diff-split-cell">
+                    <span class="diff-new-num">${right.newLine}</span>
+                    <code>${escapeHtml(right.content)}</code>
+                </div>
+            </div>
+        `;
+    }
+    return `
+        <div class="diff-split-row changed">
+            ${leftCell}
+            ${rightCell}
+        </div>
+    `;
 }
 
 // 基于最长公共子序列的行级 Diff；大文件使用前后缀压缩回退。
@@ -2096,11 +2828,27 @@ async function copyCode() {
 function finishAnalysis(code) {
     state.originalCode = code;
     state.analyzedCode = code;
+    state.currentCode = code;
     state.hasUnsavedChanges = false;
-    
-    // 显示编辑按钮
-    el.editCode.hidden = state.isBuiltInSample;
-    el.editStatus.textContent = state.isBuiltInSample ? "官方示例 · 只读" : "";
+    state.isEditing = false;
+    state.patchPlans.clear();
+    state.patchErrors.clear();
+    state.currentDiff = null;
+    state.expandedDiffRanges = new Set();
+    el.sourceCode.value = code;
+    el.sourceCode.readOnly = true;
+    el.sourceCode.hidden = false;
+    el.diffViewer.hidden = true;
+    el.verificationPanel.hidden = true;
+    el.verificationPanel.innerHTML = "";
+    el.editCode.hidden = false;
+    el.saveEdit.hidden = true;
+    el.cancelEdit.hidden = true;
+    el.editStatus.textContent = state.isBuiltInSample
+        ? "内置示例 · 修改仅在本次打开期间保留"
+        : "";
+    updateLineNumbers();
+    updateRollbackButton();
 }
 
 // 加载 pytutor 可视化
@@ -2131,6 +2879,7 @@ async function loadTutorVisualization(code) {
             tutorOptions
         );
         styleTutorVisualizer();
+        bindTutorStepSync();
         queueTutorConnectorRedraw();
         window.setTimeout(reflowTutorVisualizer, 120);
         
@@ -2190,6 +2939,8 @@ async function runAnalysis() {
         state.activeTab = "workflow";
         state.activeSuggestion = (dataStore.suggestions[0] && dataStore.suggestions[0].id) || null;
         state.latestAnalysisTaskId = payload.meta?.taskId || null;
+        state.sourceHash = payload.meta?.sourceHash || "";
+        state.fileId = payload.meta?.fileId || "editor";
         
         finishAnalysis(code);
         resetTraceWorkspace(true);
@@ -2260,6 +3011,7 @@ function bindEvents() {
     // 代码编辑器
     el.sourceCode.addEventListener("input", () => {
         updateLineNumbers();
+        state.sourceHash = "";
         if (state.analyzedCode && el.sourceCode.value.trim() !== state.analyzedCode) {
             state.latestAnalysisTaskId = null;
             setChatStatus("代码已修改，请重新分析后再继续追问。");
@@ -2275,6 +3027,10 @@ function bindEvents() {
     
     // 代码页面操作
     el.reloadFile.addEventListener("click", () => {
+        if (state.isBuiltInSample) {
+            loadSample();
+            return;
+        }
         if (state.currentCode) {
             el.sourceCode.value = state.currentCode;
             updateLineNumbers();
@@ -2332,6 +3088,13 @@ function bindEvents() {
             node.open = false;
         });
     });
+    el.traceTreeView.addEventListener("click", (event) => {
+        const sourceButton = event.target.closest("[data-source-ref]");
+        if (!sourceButton) return;
+        event.preventDefault();
+        event.stopPropagation();
+        revealSourceFromElement(sourceButton);
+    });
 
     el.runTracerTrace.addEventListener("click", runTracerTrace);
     el.runTerminalCode.addEventListener("click", runTerminalCode);
@@ -2360,6 +3123,7 @@ function bindEvents() {
     el.editCode.addEventListener("click", enableEditMode);
     el.saveEdit.addEventListener("click", saveEdit);
     el.cancelEdit.addEventListener("click", cancelEditMode);
+    el.rollbackEdit.addEventListener("click", rollbackLastEdit);
     el.copyCode.addEventListener("click", copyCode);
 
     // 工作台一级视图
@@ -2381,6 +3145,13 @@ function bindEvents() {
     });
 
     el.tabBars.addEventListener("click", (e) => {
+        const sourceJump = e.target.closest("[data-source-ref]");
+        if (sourceJump) {
+            e.preventDefault();
+            e.stopPropagation();
+            revealSourceFromElement(sourceJump);
+            return;
+        }
         const button = e.target.closest("[data-function-details]");
         if (!button) return;
         const shouldOpen = button.dataset.functionDetails === "expand";
@@ -2399,6 +3170,42 @@ function bindEvents() {
         state.activeSuggestion = btn.dataset.suggestion;
         renderSuggestions();
     });
+
+    el.suggestionDetail.addEventListener("click", (event) => {
+        const sourceJump = event.target.closest("[data-source-ref]");
+        if (sourceJump) {
+            event.preventDefault();
+            revealSourceFromElement(sourceJump);
+            return;
+        }
+        const action = event.target.closest("[data-suggestion-action]");
+        if (!action) return;
+        event.preventDefault();
+        const suggestionId = action.dataset.suggestionId;
+        if (action.dataset.suggestionAction === "generate-patch") {
+            generateSuggestionPatch(suggestionId);
+        } else if (action.dataset.suggestionAction === "apply-patch") {
+            applySuggestionPatch(suggestionId);
+        } else if (action.dataset.suggestionAction === "clear-patch") {
+            state.patchPlans.delete(suggestionId);
+            state.patchErrors.delete(suggestionId);
+            renderSuggestionDetail();
+        }
+    });
+
+    el.diffViewer.addEventListener("click", (event) => {
+        const action = event.target.closest("[data-diff-action]");
+        if (!action) return;
+        if (action.dataset.diffAction === "toggle-mode") {
+            state.diffMode = state.diffMode === "unified" ? "split" : "unified";
+            renderDiffView();
+        } else if (action.dataset.diffAction === "expand") {
+            state.expandedDiffRanges.add(action.dataset.diffRange);
+            renderDiffView();
+        } else if (action.dataset.diffAction === "rollback") {
+            rollbackLastEdit();
+        }
+    });
     
     // 可视化标签页
     el.vizTabs.addEventListener("click", (e) => {
@@ -2411,6 +3218,11 @@ function bindEvents() {
         
         el.astVizContent.hidden = btn.dataset.viz !== "ast";
         el.perfVizContent.hidden = btn.dataset.viz !== "performance";
+    });
+    el.perfVizContent.addEventListener("click", (event) => {
+        const sourceJump = event.target.closest("[data-source-ref]");
+        if (!sourceJump) return;
+        revealSourceFromElement(sourceJump);
     });
 }
 

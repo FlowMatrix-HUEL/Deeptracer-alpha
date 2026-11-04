@@ -11,6 +11,11 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from deeptracer.server.source_refs import (
+    call_site_refs,
+    hash_source,
+    source_functions,
+)
 from deeptracer.tracer_support import get_tracer_python_path
 
 
@@ -114,13 +119,17 @@ def execute_tracer_trace(
     if not isinstance(result, dict):
         raise RuntimeError("Tracer 返回了无效结果。")
 
+    source_hash = hash_source(code)
     roots = build_trace_tree(result.get("traceLines") or [])
+    _attach_trace_source_refs(roots, code, source_hash)
     return {
         **result,
         "traceTree": roots,
         "callCount": _count_nodes(roots),
         "selectedFunctions": functions,
         "options": normalized_options,
+        "sourceHash": source_hash,
+        "fileId": "editor",
     }
 
 
@@ -196,6 +205,47 @@ def _normalize_options(options: dict[str, Any] | None) -> dict[str, bool]:
 
 def _count_nodes(nodes: list[dict[str, Any]]) -> int:
     return sum(1 + _count_nodes(node.get("children") or []) for node in nodes)
+
+
+def _attach_trace_source_refs(
+    nodes: list[dict[str, Any]],
+    source_code: str,
+    source_hash: str,
+) -> None:
+    definitions = source_functions(source_code, source_hash)
+    definitions_by_name: dict[str, list[dict[str, Any]]] = {}
+    for function in definitions:
+        definitions_by_name.setdefault(function["name"], []).append(function)
+    calls_by_name = call_site_refs(source_code, source_hash)
+    counters: dict[str, int] = {}
+    sequence = 0
+
+    def enrich(node: dict[str, Any], depth: int) -> None:
+        nonlocal sequence
+        name = str(node.get("name") or "").rsplit(".", 1)[-1]
+        definition_items = definitions_by_name.get(name) or []
+        definition_ref = (
+            definition_items[0]["sourceRef"] if definition_items else None
+        )
+        call_items = calls_by_name.get(name) or []
+        call_index = counters.get(name, 0)
+        counters[name] = call_index + 1
+        call_ref = (
+            call_items[call_index % len(call_items)] if call_items else None
+        )
+        node["id"] = f"trace:{sequence}:{name}"
+        sequence += 1
+        node["depth"] = depth
+        node["definitionRef"] = definition_ref
+        node["sourceRef"] = call_ref or definition_ref
+        node["sourcePrecision"] = "call" if call_ref else (
+            "definition" if definition_ref else "unavailable"
+        )
+        for child in node.get("children") or []:
+            enrich(child, depth + 1)
+
+    for root in nodes:
+        enrich(root, 0)
 
 
 def _terminate_process_tree(process: subprocess.Popen) -> None:

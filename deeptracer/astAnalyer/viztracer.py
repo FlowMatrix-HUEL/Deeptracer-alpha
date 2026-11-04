@@ -11,6 +11,7 @@ from deeptracer.astAnalyer.signatures import (
     collect_parameters,
     format_function_signature,
 )
+from deeptracer.server.source_refs import source_ref
 
 
 class AstAnalyer:
@@ -29,7 +30,8 @@ class AstAnalyer:
     def __init__(self,
                  pythonScript:str = None,
                  open:bool=True,
-                 core_node_types:tuple=TYPES
+                 core_node_types:tuple=TYPES,
+                 source_hash:str = "",
                 )->None:
         """
         初始化函数
@@ -43,6 +45,7 @@ class AstAnalyer:
             None
         """
         self.pythonScript = pythonScript
+        self.source_hash = source_hash
         #如果存在之前缓存删除缓存代码
         self.open = open
         if self.open:
@@ -125,7 +128,8 @@ class AstAnalyer:
             label=node_info['label'],
             title=f"type: {node_info['type']}\nattribute: {node_info['attrs']}",  # 鼠标悬浮提示
             color=self._get_node_color(node_info['type']),  # 按类型着色
-            size=15  # 节点大小
+            size=15,  # 节点大小
+            sourceRef=self._source_ref_for_node(node, node_info),
         )
         if parent_id:
             self.graph.add_edge(parent_id, node_id, label=edge_label)
@@ -170,6 +174,15 @@ class AstAnalyer:
                 ),
                 color=self._get_node_color("Parameter"),
                 size=12,
+                sourceRef=source_ref(
+                    self.source_hash,
+                    start_line=getattr(node, "lineno", 1),
+                    end_line=getattr(node, "end_lineno", node.lineno),
+                    symbol=f"{node.name}.{parameter['name']}",
+                    origin="ast",
+                )
+                if self.source_hash
+                else None,
             )
             self.graph.add_edge(
                 function_id,
@@ -245,8 +258,30 @@ class AstAnalyer:
             'id': str(uuid.uuid4()),  # 唯一ID
             'type': node_type,
             'attrs': attrs,
-            'label': label
+            'label': label,
+            'lineno': getattr(node, 'lineno', None),
+            'end_lineno': getattr(node, 'end_lineno', None),
+            'col_offset': getattr(node, 'col_offset', None),
+            'end_col_offset': getattr(node, 'end_col_offset', None),
         }
+
+    def _source_ref_for_node(self, node: ast.AST, node_info: dict) -> dict | None:
+        line = node_info.get("lineno")
+        if not self.source_hash or not line:
+            return None
+        symbol = None
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            symbol = node.name
+        return source_ref(
+            self.source_hash,
+            start_line=line,
+            end_line=node_info.get("end_lineno") or line,
+            start_col=node_info.get("col_offset"),
+            end_col=node_info.get("end_col_offset"),
+            symbol=symbol,
+            origin="ast",
+        )
+
     def visualize(self,
                   )->None:
         """
@@ -291,8 +326,32 @@ class AstAnalyer:
         
         # 生成HTML文件
         core_html = net.generate_html()
+        core_html = self._inject_source_link(core_html)
         print_color("AST可视化已生成", color="green")
         return core_html
+
+    @staticmethod
+    def _inject_source_link(html: str) -> str:
+        script = """
+<script>
+(function () {
+  if (typeof network === "undefined") return;
+  network.on("click", function (params) {
+    if (!params.nodes || !params.nodes.length) return;
+    var node = network.body.data.nodes.get(params.nodes[0]);
+    if (!node || !node.sourceRef) return;
+    parent.postMessage({
+      type: "deeptracer:reveal-source",
+      sourceRef: node.sourceRef,
+      origin: "ast"
+    }, "*");
+  });
+})();
+</script>
+"""
+        if "</body>" in html:
+            return html.replace("</body>", f"{script}</body>", 1)
+        return html + script
 
 
 def _call_display_name(node: ast.AST) -> str:

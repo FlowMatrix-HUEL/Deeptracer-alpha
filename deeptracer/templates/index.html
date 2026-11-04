@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DeepTracer | Python 代码分析助手</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}?v={{ asset_version }}">
 </head>
 <body data-theme="mist">
     <!-- 顶部导航栏 -->
@@ -91,6 +91,7 @@
                             <button class="action-button small" id="editCode" type="button" hidden>编辑</button>
                             <button class="action-button small" id="saveEdit" type="button" hidden>保存</button>
                             <button class="action-button small" id="cancelEdit" type="button" hidden>取消</button>
+                            <button class="action-button small" id="rollbackEdit" type="button" hidden>回滚修改</button>
                         </div>
                         <div class="source-toolbar-utility">
                             <button class="action-button small" id="copyCode" type="button" title="复制代码">复制</button>
@@ -108,7 +109,9 @@
                         <span id="fileName">未命名</span>
                         <span id="lineCount">1 行</span>
                         <span id="editStatus"></span>
+                        <span id="sourceFocusStatus"></span>
                     </div>
+                    <div class="verification-panel" id="verificationPanel" hidden></div>
                 </div>
 
                 <!-- 拖拽分隔条 -->
@@ -380,6 +383,6 @@
 
     <noscript>请开启 JavaScript 以获得完整体验。</noscript>
     <script src="/tutor-assets/build/pytutor-embed.bundle.js?d7b0418262" charset="utf-8" defer></script>
-    <script src="{{ url_for('static', path='app.js') }}" defer></script>
+    <script src="{{ url_for('static', path='app.js') }}?v={{ asset_version }}" defer></script>
 </body>
 </html>

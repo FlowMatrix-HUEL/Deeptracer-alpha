@@ -53,6 +53,22 @@ Agent 关闭时，后半段直接使用本地回退结果。
 - 源代码区永久展开。
 - 按钮统一为无边框、无阴影和小圆角；主操作使用浅色强调，而不是实色边框块。
 
+## 源码定位协议
+
+- 分析结果、Tracer、AST、建议和 Python Tutor 统一返回 `SourceRef`。
+- `SourceRef` 包含 `fileId`、`sourceHash`、`startLine`、`endLine` 和来源视图。
+- 任何跳转先校验当前源码哈希；代码变化后旧位置不再用于定位。
+- AST 使用 iframe `postMessage` 回传节点位置，父页面校验消息来源。
+- Python Tutor 通过包装当前可视化对象的步进渲染方法发布行号，不修改 vendor 源文件。
+- Tracer 源目录保持不变；DeepTracer 在包装层根据 AST 函数范围和调用点补充源码位置。
+
+## Patch 与验证
+
+- Agent 或本地规则只生成结构化 `EditPlan`，不直接写文件。
+- 应用前检查源码哈希、原始片段、范围重叠和修改后 Python 语法。
+- 应用后分别运行修改前后代码；行为状态为 `unchanged`、`changed`、`improved` 或 `regressed`。
+- 前端保存修改快照，回滚时同时恢复代码、分析结果、Tracer 和终端状态。
+
 ## 内置 Tracer
 
 - Tracer 源目录保持不变。

@@ -17,6 +17,11 @@ from deeptracer.astAnalyer.signatures import (
     format_function_signature,
     unparse,
 )
+from deeptracer.server.source_refs import (
+    EDITOR_FILE_ID,
+    hash_source,
+    source_ref,
+)
 from deeptracer.tracer_support import get_tracer_python_path
 
 
@@ -78,8 +83,9 @@ def _analyze_source_code(source_code: str, display_name: str | None = None) -> d
 
 def _build_report(code: str, execution_path: Path, display_name: str) -> dict:
     tree = ast.parse(code)
+    source_hash = hash_source(code)
     source_lines = code.splitlines()
-    functions = _collect_functions(tree)
+    functions = _collect_functions(tree, source_hash=source_hash)
     top_nodes = Counter(type(node).__name__ for node in ast.walk(tree)).most_common(4)
     print_line_numbers = _print_line_numbers(tree)
     print_calls = len(print_line_numbers)
@@ -87,8 +93,8 @@ def _build_report(code: str, execution_path: Path, display_name: str) -> dict:
     runtime = _profile_script(execution_path, code)
 
     ast_tab = _build_ast_tab(functions, print_calls, source_lines)
-    perf_tab = _build_perf_tab(runtime, loop_calls)
-    memory_tab = _build_memory_tab(runtime)
+    perf_tab = _build_perf_tab(runtime, loop_calls, source_hash)
+    memory_tab = _build_memory_tab(runtime, source_hash)
     suggestions = _build_suggestions(
         functions,
         loop_calls,
@@ -98,10 +104,15 @@ def _build_report(code: str, execution_path: Path, display_name: str) -> dict:
         source_lines,
         print_line_numbers,
     )
+    _attach_suggestion_source_refs(suggestions, source_hash)
     workflow_tab = _build_dynamic_overview_tab(runtime, display_name, top_nodes, functions, loop_calls, suggestions)
     
     # 生成 AST 可视化 HTML
-    ast_visualization_html = _generate_ast_visualization(code, display_name)
+    ast_visualization_html = _generate_ast_visualization(
+        code,
+        display_name,
+        source_hash=source_hash,
+    )
     
     # 生成性能分析 HTML
     perf_visualization_html = _generate_perf_visualization(runtime, display_name)
@@ -133,6 +144,8 @@ def _build_report(code: str, execution_path: Path, display_name: str) -> dict:
         ],
         "meta": {
             "targetPath": display_name,
+            "fileId": EDITOR_FILE_ID,
+            "sourceHash": source_hash,
             "stdout": runtime["stdout"][:800],
             "runtimeError": runtime["error"],
             "pyinstrumentSamples": runtime.get("pyinstrument_sample_count", 0),
@@ -151,29 +164,42 @@ def _resolve_python_path(path_text: str) -> Path:
     return target
 
 
-def _collect_functions(tree: ast.AST) -> list[dict]:
+def _collect_functions(
+    tree: ast.AST,
+    *,
+    source_hash: str = "",
+) -> list[dict]:
     functions: list[dict] = []
 
     def visit(node: ast.AST, scope: tuple[str, ...]) -> None:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             end_lineno = getattr(node, "end_lineno", node.lineno)
             qualified_name = ".".join((*scope, node.name))
-            functions.append(
-                {
-                    "name": node.name,
-                    "qualified_name": qualified_name,
-                    "scope": ".".join(scope) or None,
-                    "signature": format_function_signature(node),
-                    "parameters": collect_parameters(node),
-                    "decorators": [unparse(item) for item in node.decorator_list],
-                    "returns": unparse(node.returns) or None,
-                    "is_async": isinstance(node, ast.AsyncFunctionDef),
-                    "lineno": node.lineno,
-                    "end_lineno": end_lineno,
-                    "line_span": max(1, end_lineno - node.lineno + 1),
-                    "complexity": _function_complexity(node),
-                }
-            )
+            function = {
+                "name": node.name,
+                "qualified_name": qualified_name,
+                "scope": ".".join(scope) or None,
+                "signature": format_function_signature(node),
+                "parameters": collect_parameters(node),
+                "decorators": [unparse(item) for item in node.decorator_list],
+                "returns": unparse(node.returns) or None,
+                "is_async": isinstance(node, ast.AsyncFunctionDef),
+                "lineno": node.lineno,
+                "end_lineno": end_lineno,
+                "line_span": max(1, end_lineno - node.lineno + 1),
+                "complexity": _function_complexity(node),
+            }
+            if source_hash:
+                function["sourceRef"] = source_ref(
+                    source_hash,
+                    start_line=node.lineno,
+                    end_line=end_lineno,
+                    start_col=getattr(node, "col_offset", 0),
+                    end_col=getattr(node, "end_col_offset", 0),
+                    symbol=qualified_name,
+                    origin="ast",
+                )
+            functions.append(function)
             for child in node.body:
                 visit(child, (*scope, node.name))
             return
@@ -442,7 +468,11 @@ def _build_ast_tab(functions: list[dict], print_calls: int, source_lines: list[s
     }
 
 
-def _build_perf_tab(runtime: dict, loop_calls: list[dict]) -> dict:
+def _build_perf_tab(
+    runtime: dict,
+    loop_calls: list[dict],
+    source_hash: str,
+) -> dict:
     total = sum(item["total_ms"] for item in runtime["profile_rows"]) or 1
     bars = [
         {"label": f"{item['label']} @ 第 {item['line']} 行", "value": round(item["total_ms"] / total * 100, 1)}
@@ -459,6 +489,24 @@ def _build_perf_tab(runtime: dict, loop_calls: list[dict]) -> dict:
         points.append(f"循环中最值得留意的调用是 {loop_calls[0]['name']}。")
     if runtime["error"]:
         points.append(f"执行时报错：{runtime['error']}。")
+    hotspots = [
+        {
+            "id": f"performance:{item['line']}:{item['label']}",
+            "label": item["label"],
+            "line": item["line"],
+            "calls": item.get("calls", 0),
+            "totalMs": item.get("total_ms", 0),
+            "selfMs": item.get("self_ms", 0),
+            "sourceRef": source_ref(
+                source_hash,
+                start_line=item["line"],
+                end_line=item["line"],
+                symbol=item["label"],
+                origin="performance",
+            ),
+        }
+        for item in runtime["profile_rows"]
+    ]
     return {
         "title": "性能",
         "summary": "不需要先理解全部代码，先看哪里最慢就够了。",
@@ -468,17 +516,40 @@ def _build_perf_tab(runtime: dict, loop_calls: list[dict]) -> dict:
             {"label": "可见样本", "value": str(len(runtime["profile_rows"]))},
         ],
         "bars": bars,
+        "hotspots": hotspots,
         "points": points,
     }
 
 
-def _build_memory_tab(runtime: dict) -> dict:
+def _build_memory_tab(runtime: dict, source_hash: str) -> dict:
     bars = [
         {"label": f"{item['label']} ({item['size_kb']} KB)", "value": item["value"]}
         for item in runtime["memory_rows"]
     ]
     if not bars:
         bars = [{"label": "当前没有明显热点", "value": 0}]
+    hotspots = []
+    for item in runtime["memory_rows"]:
+        digits = "".join(ch for ch in str(item.get("label") or "") if ch.isdigit())
+        if not digits:
+            continue
+        line = int(digits)
+        hotspots.append(
+            {
+                "id": f"memory:{line}",
+                "label": f"第 {line} 行",
+                "line": line,
+                "value": item.get("value", 0),
+                "sizeKb": item.get("size_kb", 0),
+                "sourceRef": source_ref(
+                    source_hash,
+                    start_line=line,
+                    end_line=line,
+                    symbol="memory-hotspot",
+                    origin="memory",
+                ),
+            }
+        )
     return {
         "title": "内存",
         "summary": "这部分帮助你判断代码是不是持有了过多不必要的数据。",
@@ -488,6 +559,7 @@ def _build_memory_tab(runtime: dict) -> dict:
             {"label": "运行状态", "value": "有异常" if runtime["error"] else "正常"},
         ],
         "bars": bars,
+        "hotspots": hotspots,
         "points": [
             "内存数据来自 Python 标准库 tracemalloc。",
             "如果这里的峰值很高，通常说明有大对象存在时间过长。",
@@ -656,6 +728,27 @@ def _build_suggestions(
     return suggestions[:3]
 
 
+def _attach_suggestion_source_refs(
+    suggestions: list[dict],
+    source_hash: str,
+) -> None:
+    for suggestion in suggestions:
+        detail = suggestion.setdefault("detail", {})
+        anchors = detail.get("codeAnchors") or []
+        for anchor in anchors:
+            if not isinstance(anchor, dict):
+                continue
+            line = anchor.get("line")
+            if line:
+                anchor["sourceRef"] = source_ref(
+                    source_hash,
+                    start_line=int(line),
+                    end_line=int(line),
+                    symbol=anchor.get("label"),
+                    origin="suggestion",
+                )
+
+
 def _build_dynamic_overview_tab(
     runtime: dict,
     display_name: str,
@@ -732,7 +825,12 @@ def _refactor_score(functions: list[dict], loop_calls: list[dict], suggestions: 
     return max(12, min(100, round(raw_score)))
 
 
-def _generate_ast_visualization(code: str, display_name: str) -> str:
+def _generate_ast_visualization(
+    code: str,
+    display_name: str,
+    *,
+    source_hash: str,
+) -> str:
     """
     生成 AST 可视化 HTML
     
@@ -750,7 +848,11 @@ def _generate_ast_visualization(code: str, display_name: str) -> str:
             temp_path = Path(temp_file.name)
         
         try:
-            analyzer = AstAnalyer(pythonScript=str(temp_path), open=True)
+            analyzer = AstAnalyer(
+                pythonScript=str(temp_path),
+                open=True,
+                source_hash=source_hash,
+            )
             html_content = analyzer.visualize()
             return html_content or ""
         finally:
