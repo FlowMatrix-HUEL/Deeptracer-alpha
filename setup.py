@@ -16,6 +16,7 @@ setup(
         "pyinstrument>=5.1.1",
         "fastapi>=0.135.1",
         "uvicorn>=0.41.0",
+        "rich>=13.0.0",
         "pydantic>=2.10.0",
         "langchain>=0.3.0",
         "langgraph>=0.2.0",
@@ -23,9 +24,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "deeptracer=deeptracer.clip:main",
-            "deeptracer-config=deeptracer.config_cli:main",
-            "deeptracer-web=deeptracer.server.app:main",
+            "deeptracer=deeptracer.tui:main",
         ]
     },
     test_suite = "test"

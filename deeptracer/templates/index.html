@@ -242,7 +242,7 @@
                 <div>
                     <p class="analysis-eyebrow">DeepTracer Workspace</p>
                     <h1>代码分析工作台</h1>
-                    <p>在分析、可视化与答疑之间切换，一次专注一个任务。</p>
+                    <p>分析结果、可视化与 AI 答疑按顺序展开，所有内容保留在同一页面。</p>
                 </div>
                 <div class="analysis-heading-actions">
                     <button class="action-button small" id="backToCode" type="button">← 返回代码</button>
@@ -250,22 +250,7 @@
                 </div>
             </header>
 
-            <nav class="workspace-tabs" id="workspaceTabs" role="tablist" aria-label="分析工作区">
-                <button class="workspace-tab is-active" data-workspace="analysis" role="tab" aria-selected="true">
-                    <span>分析</span>
-                    <small>概览、结构与建议</small>
-                </button>
-                <button class="workspace-tab" data-workspace="visualization" role="tab" aria-selected="false">
-                    <span>AST 可视化</span>
-                    <small>语法树与性能视图</small>
-                </button>
-                <button class="workspace-tab" data-workspace="chat" role="tab" aria-selected="false">
-                    <span>AI 答疑</span>
-                    <small>围绕当前代码追问</small>
-                </button>
-            </nav>
-
-            <section class="workspace-panel" data-workspace-panel="analysis" role="tabpanel">
+            <section class="analysis-section" aria-label="代码分析">
                 <div class="analysis-context">
                     <div class="runtime-banner" id="runtimeBanner" hidden></div>
                     <div class="metrics-grid" id="summaryCards"></div>
@@ -314,44 +299,40 @@
                 </div>
             </section>
 
-            <section class="workspace-panel" data-workspace-panel="visualization" role="tabpanel" hidden>
-                <div class="visualizations-section">
-                    <div class="section-header">
-                        <div>
-                            <p class="analysis-eyebrow">Visualization</p>
-                            <h2>代码可视化</h2>
-                        </div>
-                        <div class="viz-tabs" id="vizTabs">
-                            <button class="viz-tab is-active" data-viz="ast">AST 语法树</button>
-                            <button class="viz-tab" data-viz="performance">性能火焰图</button>
-                        </div>
+            <section class="analysis-section visualizations-section" aria-label="代码可视化">
+                <div class="section-header">
+                    <div>
+                        <p class="analysis-eyebrow">Visualization</p>
+                        <h2>代码可视化</h2>
                     </div>
-                    <div class="viz-container" id="vizContainer">
-                        <div class="viz-content" id="astVizContent"></div>
-                        <div class="viz-content" id="perfVizContent" hidden></div>
+                    <div class="viz-tabs" id="vizTabs">
+                        <button class="viz-tab is-active" data-viz="ast">AST 语法树</button>
+                        <button class="viz-tab" data-viz="performance">性能火焰图</button>
                     </div>
+                </div>
+                <div class="viz-container" id="vizContainer">
+                    <div class="viz-content" id="astVizContent"></div>
+                    <div class="viz-content" id="perfVizContent" hidden></div>
                 </div>
             </section>
 
-            <section class="workspace-panel" data-workspace-panel="chat" role="tabpanel" hidden>
-                <div class="chat-section">
-                    <div class="section-header">
-                        <div>
-                            <p class="analysis-eyebrow">AI Tutor</p>
-                            <h2>围绕当前代码继续追问</h2>
-                        </div>
-                        <button class="action-button small" id="chatStop" type="button" hidden>停止</button>
+            <section class="analysis-section chat-section" aria-label="AI 答疑">
+                <div class="section-header">
+                    <div>
+                        <p class="analysis-eyebrow">AI Tutor</p>
+                        <h2>围绕当前代码继续追问</h2>
                     </div>
-                    <div class="chat-shell">
-                        <div class="chat-status" id="chatStatus">分析完成后，可以继续追问这段代码为什么这样写、哪里更值得先看、下一步应该怎么改。</div>
-                        <div class="chat-transcript" id="chatTranscript">
-                            <div class="chat-empty">这里会保留你基于当前代码的追问记录。</div>
-                        </div>
-                        <div class="chat-compose">
-                            <textarea id="chatInput" rows="3" placeholder="继续追问，例如：为什么这里会成为热点？"></textarea>
-                            <div class="chat-actions">
-                                <button class="action-button small primary" id="chatSend" type="button">发送</button>
-                            </div>
+                    <button class="action-button small" id="chatStop" type="button" hidden>停止</button>
+                </div>
+                <div class="chat-shell">
+                    <div class="chat-status" id="chatStatus">分析完成后，可以继续追问这段代码为什么这样写、哪里更值得先看、下一步应该怎么改。</div>
+                    <div class="chat-transcript" id="chatTranscript">
+                        <div class="chat-empty">这里会保留你基于当前代码的追问记录。</div>
+                    </div>
+                    <div class="chat-compose">
+                        <textarea id="chatInput" rows="3" placeholder="继续追问，例如：为什么这里会成为热点？"></textarea>
+                        <div class="chat-actions">
+                            <button class="action-button small primary" id="chatSend" type="button">发送</button>
                         </div>
                     </div>
                 </div>

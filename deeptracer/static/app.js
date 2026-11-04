@@ -226,7 +226,6 @@ const demoData = {
 const state = {
     theme: "mist",
     currentPage: "home",
-    activeWorkspace: "analysis",
     activeTab: "workflow",
     activeSuggestion: demoData.suggestions[0].id,
     activeViz: "ast",
@@ -335,8 +334,6 @@ function initElements() {
         // 分析结果页面
         runtimeBanner: document.getElementById("runtimeBanner"),
         summaryCards: document.getElementById("summaryCards"),
-        workspaceTabs: document.getElementById("workspaceTabs"),
-        workspacePanels: document.querySelectorAll("[data-workspace-panel]"),
         backToCode: document.getElementById("backToCode"),
         openTracer: document.getElementById("openTracer"),
         resultTabs: document.getElementById("resultTabs"),
@@ -390,29 +387,6 @@ function switchToPage(pageName) {
     }
 
     window.scrollTo({ top: 0, behavior: "auto" });
-}
-
-function setWorkspaceView(workspaceName) {
-    const target = document.querySelector(`[data-workspace-panel="${workspaceName}"]`);
-    if (!target) return;
-
-    state.activeWorkspace = workspaceName;
-    el.workspaceTabs.querySelectorAll(".workspace-tab").forEach(tab => {
-        const isActive = tab.dataset.workspace === workspaceName;
-        tab.classList.toggle("is-active", isActive);
-        tab.setAttribute("aria-selected", String(isActive));
-    });
-    el.workspacePanels.forEach(panel => {
-        panel.hidden = panel.dataset.workspacePanel !== workspaceName;
-    });
-
-    if (workspaceName === "chat") {
-        window.requestAnimationFrame(() => {
-            if (el.chatTranscript) {
-                el.chatTranscript.scrollTop = el.chatTranscript.scrollHeight;
-            }
-        });
-    }
 }
 
 function setExecutionMode(mode) {
@@ -2197,7 +2171,6 @@ async function runAnalysis() {
         
         // 分析完成后进入工作台，默认先展示结果详情。
         switchToPage("analysis");
-        setWorkspaceView("analysis");
         
         // 执行流程会再次运行用户代码，改为由用户显式点击“生成执行流程”。
         resetTutorSurface();
@@ -2357,13 +2330,6 @@ function bindEvents() {
     el.cancelEdit.addEventListener("click", cancelEditMode);
     el.copyCode.addEventListener("click", copyCode);
 
-    // 工作台一级视图
-    el.workspaceTabs.addEventListener("click", (event) => {
-        const button = event.target.closest(".workspace-tab");
-        if (!button) return;
-        setWorkspaceView(button.dataset.workspace);
-    });
-    
     // 分析结果标签页
     el.resultTabs.addEventListener("click", (e) => {
         const btn = e.target.closest(".tab-btn");
@@ -2420,7 +2386,6 @@ function initApp() {
     }
     
     setTheme(state.theme);
-    setWorkspaceView(state.activeWorkspace);
     setExecutionMode(state.activeExecutionMode);
     setTraceView(state.traceActiveView);
     updateLineNumbers();

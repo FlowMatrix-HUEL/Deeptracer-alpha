@@ -7,7 +7,11 @@ from deeptracer.server.analysis_service import analyze_python_input
 
 def test_user_code_runs_in_an_isolated_process():
     payload = analyze_python_input(
-        source_code="import os\nprint(os.getpid())\n",
+        source_code=(
+            "import os\n"
+            "total = sum(index * index for index in range(20000))\n"
+            "print(os.getpid())\n"
+        ),
         display_name="pid.py",
     )
 

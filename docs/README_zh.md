@@ -5,6 +5,7 @@
 ## 文档索引
 
 - [功能说明](./features.md)
+- [终端菜单](./tui.md)
 - [配置指南](./configuration.md)
 - [API 文档](./api.md)
 - [Tracer 库 API](./tracer-api.md)

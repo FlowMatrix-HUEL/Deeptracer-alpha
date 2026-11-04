@@ -8,38 +8,29 @@ DeepTracer 固定读取：
 ~/.deeptracer/.env.local
 ```
 
-推荐使用：
+从唯一入口进入配置菜单：
 
 ```bash
-deeptracer-config
+deeptracer
 ```
 
-API Key 输入不会回显。配置写入后需要重启 `deeptracer-web`。
+选择“配置模型”或“查看当前配置”。API Key 输入不会回显。配置写入后需要在主菜单中重新启动 Web。
 
 ## 查看配置
 
 ```bash
-deeptracer-config --show
+deeptracer
 ```
 
-API Key 会脱敏显示。
+选择“查看当前配置”，API Key 会脱敏显示。
 
 ## 非交互式配置
 
-```bash
-deeptracer-config \
-  --api-key "你的 API Key" \
-  --base-url "https://兼容接口地址/v1" \
-  --model "模型名称" \
-  --temperature 0.2
-```
+也可以从主菜单依次选择“配置模型”，然后按提示填写 API Key、Base URL、模型名称和 Temperature。
 
 ## 关闭与启用 Agent
 
-```bash
-deeptracer-config --disable-agents
-deeptracer-config --enable-agents
-```
+在主菜单选择“关闭 Agent”或“启用 Agent”。
 
 关闭后：
 
@@ -70,7 +61,8 @@ DEEPTRACER_AGENTS_ENABLED=false
 | 环境变量 | 默认值 | 用途 |
 | --- | --- | --- |
 | `DEEPTRACER_EXECUTION_TIMEOUT_SECONDS` | `5` | 分析与 PyInstrument 执行 |
-| `DEEPTRACER_PYINSTRUMENT_INTERVAL_SECONDS` | `0.00001` | PyInstrument 采样间隔；短代码可降低该值获得更多样本 |
+| `DEEPTRACER_PYINSTRUMENT_INTERVAL_SECONDS` | 自动（200µs/500µs） | PyInstrument 采样间隔；无导入代码 200µs，有导入代码 500µs |
+| `DEEPTRACER_PYINSTRUMENT_MAX_SAMPLES` | `2000` | 火焰图渲染前的最大样本数 |
 | `DEEPTRACER_TUTOR_TIMEOUT_SECONDS` | `8` | Python Tutor |
 | `DEEPTRACER_TRACER_TIMEOUT_SECONDS` | `8` | Tracer 调用追踪 |
 | `DEEPTRACER_RUN_TIMEOUT_SECONDS` | `5` | 运行终端 |

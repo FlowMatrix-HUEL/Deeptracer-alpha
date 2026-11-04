@@ -10,7 +10,7 @@ from deeptracer.workflow.env_utils import build_env_local
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="deeptracer-config",
+        prog="deeptracer",
         description="配置 DeepTracer 的 OpenAI 兼容模型。",
     )
     parser.add_argument("--api-key", help="OpenAI 或兼容网关的 API Key")
@@ -55,7 +55,7 @@ def configure(argv: list[str] | None = None, builder: build_env_local | None = N
         config_path = builder.set_agents_enabled(enabled)
         print(f"配置已写入：{config_path}")
         print(f"Agent：{'已启用' if enabled else '已关闭（仅本地分析）'}")
-        print("请重启 deeptracer-web 使设置生效。")
+        print("请在 deeptracer 菜单中重新启动 Web 使设置生效。")
         return config_path
 
     interactive = not any(
@@ -95,7 +95,7 @@ def configure(argv: list[str] | None = None, builder: build_env_local | None = N
 
     api_key = api_key or entries.get("OPENAI_API_KEY", "")
     if not api_key:
-        parser.error("必须提供 --api-key，或直接运行 deeptracer-config 进入交互配置")
+        parser.error("必须提供 --api-key，或从 deeptracer 主菜单配置模型")
 
     model_name = (
         model_name
@@ -136,7 +136,7 @@ def configure(argv: list[str] | None = None, builder: build_env_local | None = N
     )
     print(f"\n配置已写入：{config_path}")
     print(f"模型：{model_name}")
-    print("如果 deeptracer-web 正在运行，请重启服务以加载新配置。")
+    print("如果 Web 正在运行，请返回 deeptracer 菜单并重新启动服务。")
     return config_path
 
 

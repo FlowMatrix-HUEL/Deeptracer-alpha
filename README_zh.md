@@ -29,10 +29,10 @@ pip install -e .
 ### 2. 启动
 
 ```bash
-deeptracer-web
+deeptracer
 ```
 
-访问：
+在 Rich 终端菜单中选择“启动 DeepTracer Web”，然后访问：
 
 ```text
 http://127.0.0.1:8000
@@ -49,6 +49,7 @@ http://127.0.0.1:8000
 ## 文档
 
 - [功能说明](./docs/features.md)
+- [终端菜单](./docs/tui.md)
 - [配置指南](./docs/configuration.md)
 - [API 文档](./docs/api.md)
 - [系统设计](./docs/design.md)

@@ -22,10 +22,10 @@ conda create -n deeptracer python=3.11 -y
 conda activate deeptracer
 python -m pip install --upgrade pip
 pip install -e .
-deeptracer-web
+deeptracer
 ```
 
-Open:
+Choose **Start DeepTracer Web** from the Rich terminal menu, then open:
 
 ```text
 http://127.0.0.1:8000
@@ -36,6 +36,7 @@ Use the **NetBrick** button on the home page for deep-learning model learning, o
 ## Documentation
 
 - [Feature details](./docs/features.md)
+- [Terminal menu](./docs/tui.md)
 - [Configuration](./docs/configuration.md)
 - [API documentation](./docs/api.md)
 - [System design](./docs/design.md)

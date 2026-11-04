@@ -22,12 +22,16 @@ def test_every_literal_javascript_element_id_exists_in_template():
     assert script_ids <= template_ids
 
 
-def test_analysis_workspace_has_three_exclusive_primary_views():
-    workspaces = set(re.findall(r'data-workspace="([^"]+)"', TEMPLATE))
-    panels = set(re.findall(r'data-workspace-panel="([^"]+)"', TEMPLATE))
+def test_analysis_page_keeps_analysis_visualization_and_chat_in_one_flow():
+    assert 'id="workspaceTabs"' not in TEMPLATE
+    assert "data-workspace=" not in TEMPLATE
+    assert "data-workspace-panel=" not in TEMPLATE
+    assert TEMPLATE.count('<section class="analysis-section') == 3
 
-    assert workspaces == {"analysis", "visualization", "chat"}
-    assert panels == workspaces
+    analysis_position = TEMPLATE.index("结果详情")
+    visualization_position = TEMPLATE.index("代码可视化")
+    chat_position = TEMPLATE.index("围绕当前代码继续追问")
+    assert analysis_position < visualization_position < chat_position
 
 
 def test_sample_code_exercises_core_analysis_and_tracing_features():

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import cProfile
 import io
 import json
@@ -29,8 +30,18 @@ class LimitedBuffer(io.StringIO):
 def profile_script(path: Path) -> dict:
     code = path.read_text(encoding="utf-8")
     profiler = cProfile.Profile()
-    pyinstrument_interval = float(
-        os.getenv("DEEPTRACER_PYINSTRUMENT_INTERVAL_SECONDS", "0.00001")
+    configured_interval = os.getenv("DEEPTRACER_PYINSTRUMENT_INTERVAL_SECONDS")
+    if configured_interval:
+        pyinstrument_interval = float(configured_interval)
+    else:
+        has_imports = any(
+            isinstance(node, (ast.Import, ast.ImportFrom))
+            for node in ast.walk(ast.parse(code))
+        )
+        pyinstrument_interval = 0.0005 if has_imports else 0.0002
+    pyinstrument_max_samples = max(
+        1,
+        int(os.getenv("DEEPTRACER_PYINSTRUMENT_MAX_SAMPLES", "2000")),
     )
     pyinstrument_profiler = Profiler(interval=pyinstrument_interval)
     output = LimitedBuffer()
@@ -72,9 +83,16 @@ def profile_script(path: Path) -> dict:
         profile_rows = _profile_rows(profiler, path)
         memory_rows = _memory_rows(snapshot, peak_bytes, path)
         if pyinstrument_profiler.last_session is not None:
-            pyinstrument_sample_count = pyinstrument_profiler.last_session.sample_count
+            session = pyinstrument_profiler.last_session
+            if session.sample_count > pyinstrument_max_samples and session.duration:
+                target_interval = max(
+                    pyinstrument_interval,
+                    session.duration / pyinstrument_max_samples,
+                )
+                session = session.resample(target_interval)
+            pyinstrument_sample_count = session.sample_count
             pyinstrument_html = HTMLRenderer().render(
-                pyinstrument_profiler.last_session
+                session
             )
     except BaseException as exc:
         error_message = f"{type(exc).__name__}: {exc}"
