@@ -97,7 +97,7 @@ MENU_ITEMS = [
     MenuItem("4", "配置", "关闭 Agent", "disable_agents", "仅使用本地分析，不发送模型请求"),
     MenuItem("5", "配置", "查看当前配置", "show_config"),
     MenuItem("6", "工具", "快速分析 Python 文件", "analyze"),
-    MenuItem("7", "工具", "显示 API 文档地址", "api_docs"),
+    MenuItem("7", "工具", "打开 API 文档", "api_docs"),
     MenuItem("8", "帮助", "关于 DeepTracer", "about"),
     MenuItem("0", "退出", "退出菜单", "exit"),
 ]

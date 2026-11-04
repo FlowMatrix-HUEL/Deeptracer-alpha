@@ -9,6 +9,7 @@ TEMPLATE = (ROOT / "deeptracer" / "templates" / "index.html").read_text(
     encoding="utf-8"
 )
 SCRIPT = (ROOT / "deeptracer" / "static" / "app.js").read_text(encoding="utf-8")
+STYLES = (ROOT / "deeptracer" / "static" / "app.css").read_text(encoding="utf-8")
 API_DOCS = (ROOT / "deeptracer" / "templates" / "api_docs.html").read_text(
     encoding="utf-8"
 )
@@ -22,16 +23,13 @@ def test_every_literal_javascript_element_id_exists_in_template():
     assert script_ids <= template_ids
 
 
-def test_analysis_page_keeps_analysis_visualization_and_chat_in_one_flow():
-    assert 'id="workspaceTabs"' not in TEMPLATE
-    assert "data-workspace=" not in TEMPLATE
-    assert "data-workspace-panel=" not in TEMPLATE
-    assert TEMPLATE.count('<section class="analysis-section') == 3
+def test_analysis_workspace_has_three_exclusive_primary_views():
+    workspaces = set(re.findall(r'data-workspace="([^"]+)"', TEMPLATE))
+    panels = set(re.findall(r'data-workspace-panel="([^"]+)"', TEMPLATE))
 
-    analysis_position = TEMPLATE.index("结果详情")
-    visualization_position = TEMPLATE.index("代码可视化")
-    chat_position = TEMPLATE.index("围绕当前代码继续追问")
-    assert analysis_position < visualization_position < chat_position
+    assert workspaces == {"analysis", "visualization", "chat"}
+    assert panels == workspaces
+    assert "tabsTop - 76" in SCRIPT
 
 
 def test_sample_code_exercises_core_analysis_and_tracing_features():
@@ -93,6 +91,22 @@ def test_builtin_sample_is_read_only_and_source_buttons_are_neutral():
     assert 'class="action-button small primary" id="runAnalysis"' not in TEMPLATE
     assert 'class="action-button small success" id="saveEdit"' not in TEMPLATE
     assert 'class="action-button small danger" id="clearCode"' not in TEMPLATE
+
+
+def test_buttons_have_no_framed_outline_style():
+    neutral_rule = re.search(
+        r"\.action-button,\s*\.icon-button,\s*\.nav-button\s*\{(?P<body>[^}]+)\}",
+        STYLES,
+    )
+    primary_rules = re.findall(
+        r"\.action-button\.primary\s*\{(?P<body>[^}]+)\}",
+        STYLES,
+    )
+
+    assert neutral_rule is not None
+    assert "border: 0;" in neutral_rule.group("body")
+    assert primary_rules
+    assert "background: var(--accent-soft);" in primary_rules[-1]
 
 
 def test_source_diff_uses_lcs_and_flame_iframe_allows_required_storage():
