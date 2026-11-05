@@ -33,6 +33,7 @@ from deeptracer.server.pytutor_service import (
 )
 from deeptracer.server.run_service import execute_python_code
 from deeptracer.server.tracer_service import execute_tracer_trace
+from deeptracer.server.turtle_service import compile_turtle_source
 
 
 HOST = "127.0.0.1"
@@ -48,7 +49,7 @@ def _disable_html_cache(response):
 
 def _asset_version(static_path: str) -> str:
     versions = []
-    for filename in ("app.css", "app.js"):
+    for filename in ("app.css", "app.js", "turtle.css", "turtle.js"):
         candidate = os.path.join(static_path, filename)
         try:
             versions.append(str(os.stat(candidate).st_mtime_ns))
@@ -114,6 +115,20 @@ def create_app() -> FastAPI:
         if not candidate.is_file():
             raise HTTPException(status_code=404, detail="Asset not found.")
         return FileResponse(candidate)
+
+    @app.get("/turtle", include_in_schema=False)
+    async def turtle_redirect():
+        return RedirectResponse(url="/turtle/", status_code=307)
+
+    @app.get("/turtle/", response_class=HTMLResponse, include_in_schema=False)
+    async def turtle_page(request: Request):
+        return _disable_html_cache(
+            templates.TemplateResponse(
+                request=request,
+                name="turtle.html",
+                context={"asset_version": _asset_version(static_path)},
+            )
+        )
 
     @app.get("/", response_class=HTMLResponse, summary="Web workspace")
     async def index(request: Request):
@@ -245,6 +260,17 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=500,
                 detail=f"Tracer execution failed: {exc}",
+            ) from exc
+
+    @app.post("/api/turtle/compile", summary="Compile and step a simplified Turtle program")
+    async def turtle_compile(payload: dict[str, Any]):
+        source = str(payload.get("source") or "")
+        try:
+            return await run_in_threadpool(compile_turtle_source, source)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Turtle compile failed: {exc}",
             ) from exc
 
     @app.post("/api/run", summary="Run Python code and return terminal output")

@@ -60,6 +60,7 @@ def test_execution_panel_has_tutor_tracer_and_terminal_modes():
     assert "/api-docs" in TEMPLATE
     assert "API 文档" in TEMPLATE
     assert 'href="/netbrick/"' in TEMPLATE
+    assert 'href="/turtle/"' in TEMPLATE
     assert "home-tool-copy" not in TEMPLATE
 
 

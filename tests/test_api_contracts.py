@@ -227,6 +227,36 @@ def test_edit_apply_and_verify_endpoints(monkeypatch):
     assert verified.json()["behavior"] == "changed"
 
 
+def test_turtle_compile_endpoint_returns_execution_steps(monkeypatch):
+    async def immediate_threadpool(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "deeptracer.server.app.run_in_threadpool",
+        immediate_threadpool,
+    )
+    monkeypatch.setattr(
+        "deeptracer.server.app.compile_turtle_source",
+        lambda source: {
+            "ok": True,
+            "steps": [{"line": 1, "standardLine": 27}],
+            "commands": [],
+            "generatedCode": "import turtle\n",
+            "source": source,
+        },
+    )
+
+    response = _request(
+        "POST",
+        "/api/turtle/compile",
+        json={"source": "forward(50)"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["steps"][0]["standardLine"] == 27
+    assert response.json()["source"] == "forward(50)"
+
+
 def test_api_docs_page_is_available():
     response = _request("GET", "/api-docs")
 

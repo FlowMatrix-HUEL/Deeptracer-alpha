@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="Turtle 方向键绘图工具">
+    <title>Turtle</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='turtle.css') }}?v={{ asset_version }}">
+</head>
+<body>
+    <header class="turtle-toolbar">
+        <a class="toolbar-back" href="/">← 返回 DeepTracer</a>
+        <div class="turtle-brand">
+            <span class="turtle-brand-copy">
+                <strong>Turtle</strong>
+            </span>
+        </div>
+    </header>
+
+    <main class="turtle-workspace">
+        <aside class="turtle-panel control-panel" aria-label="海龟控制">
+            <div class="panel-heading">
+                <h1>键盘</h1>
+                <button class="panel-collapse-button" id="collapseControlPanel"
+                        type="button" aria-label="收起控制栏" title="收起控制栏">‹</button>
+            </div>
+            <button class="control-rail-open" id="openControlPanel"
+                    type="button" aria-label="展开控制栏" hidden>
+                <span>›</span>
+                <strong>控制</strong>
+            </button>
+
+            <div class="shortcut-guide" aria-label="键盘操作说明">
+                <div class="shortcut-row">
+                    <span>方向</span>
+                    <div>
+                        <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>
+                        <i>移动</i>
+                    </div>
+                </div>
+                <div class="shortcut-row">
+                    <span>转向</span>
+                    <div>
+                        <kbd>Q</kbd><i>左转</i>
+                        <kbd>E</kbd><i>右转</i>
+                    </div>
+                </div>
+                <div class="shortcut-row">
+                    <span>调整</span>
+                    <div>
+                        <kbd>Shift</kbd><kbd>↑</kbd><kbd>↓</kbd>
+                        <i>或</i>
+                        <kbd>-</kbd><kbd>+</kbd>
+                        <kbd>[</kbd><kbd>]</kbd>
+                    </div>
+                </div>
+                <p class="keyboard-focus-note">
+                    点击画布后使用方向键；按 <kbd>Esc</kbd> 可从代码区返回画布。
+                </p>
+                <details class="shortcut-more">
+                    <summary>更多快捷键</summary>
+                    <div class="shortcut-row">
+                        <span>画笔</span>
+                        <div>
+                            <kbd>P</kbd><i>切换</i>
+                            <kbd>U</kbd><i>抬起</i>
+                            <kbd>D</kbd><i>落下</i>
+                        </div>
+                    </div>
+                    <div class="shortcut-row">
+                        <span>操作</span>
+                        <div>
+                            <kbd>Ctrl</kbd><kbd>Z</kbd><i>撤销</i>
+                            <kbd>C</kbd><i>清空</i>
+                            <kbd>S</kbd><i>正方形</i>
+                        </div>
+                    </div>
+                    <div class="shortcut-row">
+                        <span>执行</span>
+                        <div>
+                            <kbd>F8</kbd><i>下一步</i>
+                            <kbd>F5</kbd><i>播放/暂停</i>
+                            <kbd>F6</kbd><i>重置</i>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+        </aside>
+
+        <div class="panel-resizer panel-resizer-vertical" id="controlResizeHandle"
+             role="separator" aria-orientation="vertical" aria-label="拖拽调整控制栏宽度"
+             tabindex="0">
+            <span></span>
+        </div>
+
+        <section class="turtle-studio">
+            <section class="turtle-panel canvas-panel" aria-label="海龟绘图画布">
+                <div class="canvas-toolbar">
+                    <div>
+                        <h2>画布</h2>
+                    </div>
+                    <div class="drawing-status">
+                        <span><i class="status-dot"></i><b id="commandCount">0</b> 个动作</span>
+                        <span class="turtle-readout" id="stepStatus">
+                            <i>长度</i><b id="currentLengthValue">60</b>
+                        </span>
+                        <span class="turtle-readout" id="angleStatus">
+                            <i>转角</i><b id="currentAngleValue">90°</b>
+                        </span>
+                        <span class="turtle-readout" id="turtlePose">
+                            <i>朝向</i><b id="currentHeadingValue">东 0°</b>
+                        </span>
+                        <span id="penStatus">画笔落下</span>
+                    </div>
+                    <div class="playback-controls" aria-label="执行控制">
+                        <button id="resetExecution" type="button" title="回到第一步">重置</button>
+                        <button id="stepExecution" type="button" title="执行下一行">下一步</button>
+                        <button id="playExecution" type="button" title="继续或暂停">继续</button>
+                        <label class="speed-control" title="播放速度">
+                            <input id="playbackSpeed" type="range" min="0" max="3" step="1" value="2">
+                            <span id="playbackSpeedValue">1x</span>
+                        </label>
+                        <button id="fullSpeedExecution" type="button">全速</button>
+                    </div>
+                </div>
+                <div class="canvas-stage">
+                    <canvas id="turtleCanvas" tabindex="0"
+                            aria-label="Turtle 绘图画布，点击后使用方向键控制"></canvas>
+                </div>
+                <details class="command-strip">
+                    <summary class="command-strip-head">
+                        <span>动作记录</span>
+                    </summary>
+                    <ol id="commandHistory" class="command-history">
+                        <li class="command-empty">还没有动作</li>
+                    </ol>
+                </details>
+            </section>
+
+            <div class="bottom-resizer" id="codeResizeHandle"
+                 role="separator" aria-orientation="horizontal" aria-label="拖拽调整代码面板高度"
+                 tabindex="0">
+                <span></span>
+            </div>
+
+            <section class="turtle-panel code-dock" aria-label="生成的 Python 代码">
+                <div class="code-dock-header">
+                    <div class="code-dock-title">
+                        <span class="file-dot"></span>
+                        <strong>Python</strong>
+                    </div>
+                    <div class="pattern-result" id="patternResult">
+                        <span class="pattern-dot"></span>
+                        还没有可匹配的重复图形
+                    </div>
+                    <button class="code-panel-toggle" id="applyStudentCode" type="button">运行代码</button>
+                    <button class="copy-code" id="copyTurtleCode" type="button">复制代码</button>
+                    <button class="code-panel-toggle" id="toggleCodePanel"
+                            type="button" aria-label="收起代码面板">收起</button>
+                </div>
+
+                <div class="code-dock-content">
+                    <section class="student-code-pane">
+                        <div class="code-pane-head">
+                            <strong>简化输入</strong>
+                            <span id="compileStatus">等待输入</span>
+                        </div>
+                        <div class="student-editor">
+                            <div class="student-line-numbers" id="studentLineNumbers"></div>
+                            <div class="student-line-highlight" id="studentLineHighlight" hidden></div>
+                            <div class="student-line-highlight student-line-hover"
+                                 id="studentLineHover" hidden></div>
+                            <textarea id="studentSource" spellcheck="false"
+                                      aria-label="简化的 Python Turtle 代码"></textarea>
+                        </div>
+                        <div class="turtle-error" id="turtleError" hidden></div>
+                    </section>
+                    <section class="standard-code-pane">
+                        <div class="code-pane-head">
+                            <strong>标准 Python</strong>
+                            <span>draw_scene 函数</span>
+                        </div>
+                        <pre class="generated-code"><code id="generatedTurtleCode"></code></pre>
+                    </section>
+                </div>
+            </section>
+        </section>
+
+        <div class="panel-resizer panel-resizer-vertical" id="variableResizeHandle"
+             role="separator" aria-orientation="vertical" aria-label="拖拽调整变量栏宽度"
+             tabindex="0">
+            <span></span>
+        </div>
+
+        <aside class="turtle-panel variable-panel" aria-label="变量监视器">
+            <div class="panel-heading variable-heading">
+                <h2>教学</h2>
+                <button class="panel-collapse-button" id="collapseVariablePanel"
+                        type="button" aria-label="收起变量栏" title="收起变量栏">›</button>
+            </div>
+            <button class="control-rail-open" id="openVariablePanel"
+                    type="button" aria-label="展开变量栏" hidden>
+                <span>‹</span>
+                <strong>变量</strong>
+            </button>
+            <div class="variable-content">
+                <details class="side-section" open>
+                    <summary>练习任务</summary>
+                    <div class="task-controls">
+                        <select id="taskSelect" aria-label="选择练习任务"></select>
+                        <button id="loadTask" type="button">载入</button>
+                        <button id="checkTask" type="button">检查</button>
+                    </div>
+                    <p class="task-description" id="taskDescription">选择任务开始练习。</p>
+                    <svg class="task-preview" id="taskPreview" viewBox="0 0 220 110"
+                         aria-label="目标图形预览"></svg>
+                    <div class="hint-actions">
+                        <button type="button" data-task-hint="1">提示 1</button>
+                        <button type="button" data-task-hint="2">提示 2</button>
+                        <button type="button" data-task-hint="3">提示 3</button>
+                    </div>
+                    <div class="task-hint" id="taskHint">需要时逐层查看提示。</div>
+                    <div class="task-feedback" id="taskFeedback"></div>
+                </details>
+                <details class="side-section" open>
+                    <summary>当前变量</summary>
+                    <div class="variable-list" id="variableList">
+                        <p class="variable-empty">运行后可查看变量。</p>
+                    </div>
+                </details>
+                <details class="side-section" open>
+                    <summary>海龟状态</summary>
+                    <div class="turtle-state-list" id="turtleStateList"></div>
+                </details>
+                <details class="side-section">
+                    <summary>画笔样式</summary>
+                    <div class="style-controls">
+                        <label>
+                            <span>颜色</span>
+                            <input id="penColorInput" type="color" value="#3370ff"
+                                   aria-label="画笔颜色">
+                        </label>
+                        <label>
+                            <span>粗细</span>
+                            <input id="penSizeInput" type="range" min="1" max="10"
+                                   step="1" value="2" aria-label="画笔粗细">
+                            <output id="penSizeValue">2</output>
+                        </label>
+                        <label>
+                            <span>填充</span>
+                            <input id="fillColorInput" type="color" value="#3370ff"
+                                   aria-label="填充颜色">
+                        </label>
+                    </div>
+                    <div class="fill-actions">
+                        <button id="beginFill" type="button">开始填充</button>
+                        <button id="endFill" type="button">结束填充</button>
+                    </div>
+                    <label class="toggle-label event-code-toggle">
+                        <input id="interactiveCodeToggle" type="checkbox">
+                        生成方向键与点击事件代码
+                    </label>
+                </details>
+                <details class="side-section">
+                    <summary>显示</summary>
+                    <div class="canvas-options">
+                        <label class="toggle-label">
+                            <input id="trailEnabled" type="checkbox" checked>
+                            显示画笔轨迹
+                        </label>
+                    </div>
+                </details>
+                <details class="side-section">
+                    <summary>概念旁白</summary>
+                    <div class="section-title-row">
+                        <label class="toggle-label">
+                            <input id="narrationEnabled" type="checkbox" checked>
+                            开启
+                        </label>
+                    </div>
+                    <p class="narration-copy" id="conceptNarration">单步执行时显示当前代码概念。</p>
+                </details>
+                <details class="side-section">
+                    <summary>作品</summary>
+                    <div class="work-controls">
+                        <input id="workName" type="text" value="我的 Turtle 作品"
+                               aria-label="作品名称">
+                        <button id="saveWork" type="button">保存</button>
+                    </div>
+                    <div class="work-actions">
+                        <button id="exportPng" type="button">导出 PNG</button>
+                        <button id="exportPython" type="button">导出 .py</button>
+                        <button id="deleteWork" type="button">删除</button>
+                    </div>
+                    <select id="workList" aria-label="已保存作品">
+                        <option value="">选择已保存作品</option>
+                    </select>
+                </details>
+            </div>
+        </aside>
+    </main>
+
+    <div class="turtle-toast" id="turtleToast" role="status" aria-live="polite"></div>
+    <script src="{{ url_for('static', path='turtle.js') }}?v={{ asset_version }}" defer></script>
+</body>
+</html>

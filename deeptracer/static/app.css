@@ -324,6 +324,11 @@ body.is-loading {
     border-color: var(--accent);
 }
 
+.turtle-entry {
+    color: var(--accent);
+    text-decoration: none;
+}
+
 .action-button {
     display: inline-flex;
     align-items: center;
