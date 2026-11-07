@@ -11,6 +11,7 @@ import { GraphCanvas } from "./components/GraphCanvas";
 import { Icon } from "./components/Icons";
 import { ImportModal } from "./components/ImportModal";
 import { Inspector } from "./components/Inspector";
+import { PartnerDock } from "./components/PartnerConsole";
 import { PublishCompositeModal } from "./components/PublishCompositeModal";
 import { Toolbar } from "./components/Toolbar";
 import { useGraphStore } from "./store";
@@ -204,6 +205,7 @@ export default function App() {
       {publishOpen && (
         <PublishCompositeModal onClose={() => setPublishOpen(false)} />
       )}
+      <PartnerDock />
       <Toast />
     </div>
   );

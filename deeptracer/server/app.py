@@ -22,6 +22,11 @@ from deeptracer.breakpoints.enrich import enrich_moments
 from deeptracer.breakpoints.netbrick import detect_netbrick_moments
 from deeptracer.breakpoints.ranking import rank_moments
 from deeptracer.netbrick_support import get_netbrick_app, get_netbrick_dist
+from deeptracer.partner import (
+    memory_snapshot,
+    save_memory_case,
+    stream_partner_events,
+)
 from deeptracer.server.analysis_context import build_analysis_payload
 from deeptracer.server.chat_service import stream_chat_events
 from deeptracer.server.edit_service import (
@@ -231,6 +236,30 @@ def create_app() -> FastAPI:
             media_type="text/event-stream",
             headers=headers,
         )
+
+    @app.post("/api/partner/stream", summary="Stream thinking-partner turns")
+    async def partner_stream(payload: dict[str, Any]):
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+        return StreamingResponse(
+            stream_partner_events(payload),
+            media_type="text/event-stream",
+            headers=headers,
+        )
+
+    @app.get("/api/partner/memory", summary="Read local partner memory")
+    async def partner_memory():
+        return await run_in_threadpool(memory_snapshot)
+
+    @app.post("/api/partner/memory", summary="Save a confusion case")
+    async def partner_memory_save(payload: dict[str, Any]):
+        try:
+            return await run_in_threadpool(save_memory_case, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/tutor/status", summary="Check local Python Tutor availability")
     async def tutor_status():

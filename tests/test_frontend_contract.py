@@ -23,12 +23,13 @@ def test_every_literal_javascript_element_id_exists_in_template():
     assert script_ids <= template_ids
 
 
-def test_analysis_workspace_has_three_exclusive_primary_views():
+def test_analysis_workspace_has_two_exclusive_primary_views():
     workspaces = set(re.findall(r'data-workspace="([^"]+)"', TEMPLATE))
     panels = set(re.findall(r'data-workspace-panel="([^"]+)"', TEMPLATE))
 
-    assert workspaces == {"analysis", "visualization", "chat"}
-    assert panels == workspaces
+    assert workspaces == {"analysis", "visualization"}
+    assert {"analysis", "visualization"} <= panels
+    assert "chat" not in workspaces
     assert "tabsTop - 76" in SCRIPT
 
 
@@ -57,6 +58,7 @@ def test_execution_panel_has_tutor_tracer_and_terminal_modes():
 
     assert modes == {"tutor", "tracer", "terminal"}
     assert "运行终端" in TEMPLATE
+    assert "partnerDockMount" in TEMPLATE
     assert "/api-docs" in TEMPLATE
     assert "API 文档" in TEMPLATE
     assert 'href="/netbrick/"' in TEMPLATE

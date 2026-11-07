@@ -285,6 +285,7 @@ function deepClone(obj) {
 // 数据存储器
 let dataStore = deepClone(demoData);
 let currentTutorVisualizer = null;
+let partnerDock = null;
 
 // 初始化 DOM 元素引用
 function initElements() {
@@ -306,6 +307,11 @@ function initElements() {
         fileInput: document.getElementById("fileInput"),
         dropZone: document.getElementById("dropZone"),
         catAnimation: document.getElementById("catAnimation"),
+        terminalEntryInput: document.getElementById("terminalEntryInput"),
+        terminalEntryError: document.getElementById("terminalEntryError"),
+        terminalSkip: document.getElementById("terminalSkip"),
+        bootOverlay: document.getElementById("bootOverlay"),
+        bootTerminal: document.getElementById("bootTerminal"),
         
         // 代码页面
         sourceCode: document.getElementById("sourceCode"),
@@ -413,7 +419,6 @@ function switchToPage(pageName) {
     if (el.navbar) {
         el.navbar.hidden = pageName === "home";
     }
-
     window.scrollTo({ top: 0, behavior: "auto" });
 }
 
@@ -540,6 +545,180 @@ function setExecutionMode(mode) {
         view.hidden = view.dataset.executionView !== mode;
     });
     el.syncTutor.hidden = mode !== "tutor";
+}
+
+function ensurePartnerDock() {
+    if (partnerDock || !window.createPartnerDock) {
+        return;
+    }
+    const mount = document.getElementById("partnerDockMount");
+    if (!mount) {
+        return;
+    }
+    partnerDock = window.createPartnerDock(mount, {
+        workbench: "python",
+        getContext: buildPartnerContext,
+        onHighlight: revealPartnerTarget,
+        onJump: revealPartnerTarget,
+        onInsert: insertPartnerCode
+    });
+}
+
+function buildPartnerContext() {
+    const analysis = dataStore.analysisMap || {};
+    const functions = Array.isArray(analysis.ast?.functions)
+        ? analysis.ast.functions
+              .map(item => item.qualified_name || item.name)
+              .filter(Boolean)
+              .slice(0, 20)
+        : [];
+    return {
+        code: el.sourceCode?.value || "",
+        displayName: currentDisplayName(),
+        selection: state.tutorLastStep?.line
+            ? { line: state.tutorLastStep.line }
+            : {},
+        analysis: {
+            focusFunction: analysis.ast?.focusFunction || "",
+            functions,
+            performance:
+                analysis.performance?.hottestFunction ||
+                analysis.performance?.summary ||
+                "",
+            memory: analysis.memory?.summary || ""
+        },
+        trace: state.tutorLastStep
+            ? {
+                  lastStep: state.tutorLastStep.step,
+                  line: state.tutorLastStep.line,
+                  event: state.tutorLastStep.event || ""
+              }
+            : {}
+    };
+}
+
+function revealPartnerTarget(target) {
+    if (!target || typeof target !== "object") return;
+    if (target.stepIndex !== null && target.stepIndex !== undefined) {
+        jumpToTutorStep(Number(target.stepIndex));
+        return;
+    }
+    if (target.line !== null && target.line !== undefined) {
+        revealSource(
+            {
+                fileId: state.fileId || "editor",
+                sourceHash: currentSourceHash(),
+                startLine: Number(target.line),
+                endLine: Number(target.line),
+                origin: "partner"
+            },
+            {
+                switchPage: false,
+                focus: true,
+                reason: "思辨伙伴"
+            }
+        );
+    }
+}
+
+function insertPartnerCode(proposal) {
+    const code = String(proposal?.code || "");
+    if (!code.trim()) return false;
+    if (el.sourceCode.readOnly) {
+        enableEditMode();
+    }
+    const lines = el.sourceCode.value.split("\n");
+    const requested = Number(proposal?.target?.line);
+    const insertAt = Number.isFinite(requested) && requested > 0
+        ? Math.min(lines.length, requested - 1)
+        : lines.length;
+    lines.splice(insertAt, 0, ...code.split("\n"));
+    el.sourceCode.value = lines.join("\n");
+    updateLineNumbers();
+    el.editStatus.textContent = "已插入示范片段；保存后重新分析验证。";
+    return true;
+}
+
+function delay(ms) {
+    return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
+function initTerminalEntry() {
+    const input = el.terminalEntryInput;
+    if (!input) return;
+    input.addEventListener("keydown", event => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        const raw = input.value.trim();
+        const command = raw.toLowerCase();
+        if (!command) return;
+        el.terminalEntryError.hidden = true;
+        el.terminalEntryError.textContent = "";
+        if (command === "deeptracer") {
+            void runBootSequence();
+            return;
+        }
+        if (command === "turtle") {
+            window.open("/turtle/", "_blank", "noopener");
+            return;
+        }
+        if (command === "netbrick") {
+            window.open("/netbrick/", "_blank", "noopener");
+            return;
+        }
+        if (command === "python") {
+            switchToPage("code");
+            return;
+        }
+        if (command === "help") {
+            el.terminalEntryError.hidden = false;
+            el.terminalEntryError.textContent =
+                "commands: deeptracer / turtle / netbrick / python / help";
+            return;
+        }
+        el.terminalEntryError.hidden = false;
+        el.terminalEntryError.textContent = `command not found: ${raw} — try deeptracer`;
+    });
+    el.terminalSkip?.addEventListener("click", () => switchToPage("code"));
+}
+
+async function runBootSequence() {
+    if (!el.bootOverlay || !el.bootTerminal) {
+        switchToPage("code");
+        return;
+    }
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    el.bootOverlay.hidden = false;
+    el.bootTerminal.textContent = "";
+    const logo = window.DEEPTRACER_LOGO || "";
+    if (logo) {
+        const logoEl = document.createElement("pre");
+        logoEl.className = "boot-logo";
+        logoEl.textContent = logo;
+        el.bootTerminal.appendChild(logoEl);
+    }
+    el.bootTerminal.insertAdjacentText("beforeend", "$ deeptracer\n");
+    const lines = [
+        "booting workbench...",
+        "  turtle      ✓",
+        "  python      ✓",
+        "  netbrick    ✓",
+        "  partner     ✓",
+        "> 准备好了。先说你想弄清楚什么？"
+    ];
+    for (const line of lines) {
+        if (!reduced) await delay(140);
+        el.bootTerminal.insertAdjacentText("beforeend", `${line}\n`);
+    }
+    if (!reduced) await delay(360);
+    el.bootOverlay.hidden = true;
+    if (!el.sourceCode.value.trim()) {
+        loadSample();
+    } else {
+        switchToPage("code");
+    }
+    ensurePartnerDock();
+    partnerDock?.open?.();
 }
 
 function getTraceableFunctions() {
@@ -3187,7 +3366,9 @@ function bindEvents() {
     
     // 拖拽调节大小
     initResizeHandler();
-    
+    initTerminalEntry();
+    ensurePartnerDock();
+
     // 文件选择
     el.selectFileBtn.addEventListener("click", () => {
         el.fileInput.click();

@@ -113,6 +113,8 @@
         momentEnrichRequest: 0
     };
 
+    let turtlePartnerDock = null;
+
     const compass = ["东", "东北", "北", "西北", "西", "西南", "南", "东南"];
     const playbackSpeeds = [0.1, 0.5, 1, 2];
     const WORK_STORAGE_KEY = "deeptracer.turtle.works.v1";
@@ -442,6 +444,58 @@
             elements.momentSource.textContent = "本地规则";
         }
         showToast("已清空画布、代码和关键瞬间");
+    }
+
+    function insertTurtlePartnerCode(proposal) {
+        const code = String(proposal?.code || "");
+        if (!code.trim()) return false;
+        const lines = elements.studentSource.value.split("\n");
+        const requested = Number(proposal?.target?.line);
+        const insertAt = Number.isFinite(requested) && requested > 0
+            ? Math.min(lines.length, requested - 1)
+            : lines.length;
+        lines.splice(insertAt, 0, ...code.split("\n"));
+        elements.studentSource.value = lines.join("\n");
+        state.sourceMode = "manual";
+        updateStudentLineNumbers();
+        scheduleCompile(120);
+        return true;
+    }
+
+    function ensureTurtlePartnerDock() {
+        if (turtlePartnerDock || !window.createPartnerDock) return;
+        const mount = document.getElementById("turtlePartnerDockMount");
+        if (!mount) return;
+        turtlePartnerDock = window.createPartnerDock(mount, {
+            workbench: "turtle",
+            getContext: () => ({
+                source: elements.studentSource.value,
+                steps: (state.compileResult?.steps || []).slice(-24).map(step => ({
+                    index: step.index,
+                    line: step.line,
+                    commandCount: step.commandCount,
+                    turtle: step.turtle
+                })),
+                error: state.compileResult?.error || null,
+                programFeatures: state.compileResult?.programFeatures || {}
+            }),
+            onHighlight: target => {
+                if (!target) return;
+                if (target.stepIndex !== null && target.stepIndex !== undefined) {
+                    renderExecutionStep(Number(target.stepIndex));
+                    return;
+                }
+                if (target.line !== null && target.line !== undefined) {
+                    setExecutionHighlight(Number(target.line), false);
+                }
+            },
+            onJump: target => {
+                if (target && target.stepIndex != null) {
+                    renderExecutionStep(Number(target.stepIndex));
+                }
+            },
+            onInsert: insertTurtlePartnerCode
+        });
     }
 
     function drawSquare() {
@@ -2974,6 +3028,7 @@
     });
 
     initPanelResizing();
+    ensureTurtlePartnerDock();
     new ResizeObserver(resizeCanvas).observe(canvas);
     window.addEventListener("resize", () => {
         applyControlWidth(state.controlWidth);

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DeepTracer | Python 代码分析助手</title>
     <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='partner.css') }}?v={{ asset_version }}">
 </head>
 <body data-theme="mist">
     <!-- 顶部导航栏 -->
@@ -46,6 +47,26 @@
 
                 <h1 class="home-title">DeepTracer</h1>
                 <p class="home-subtitle">Python 代码分析助手</p>
+
+                <div class="terminal-entry" id="terminalEntry">
+                    <div class="terminal-entry__bar">
+                        <span class="terminal-entry__path">~/deeptracer</span>
+                        <span class="terminal-entry__prompt">$</span>
+                        <input class="terminal-entry__input" id="terminalEntryInput"
+                               type="text" autocomplete="off" spellcheck="false"
+                               placeholder="deeptracer"
+                               aria-label="输入 deeptracer 进入工作台">
+                        <span class="terminal-entry__cursor" aria-hidden="true"></span>
+                    </div>
+                    <p class="terminal-entry__hint">
+                        输入 <code>deeptracer</code> 进入工作台；也可以直接输入
+                        <code>turtle</code> / <code>netbrick</code> / <code>python</code>。
+                    </p>
+                    <p class="terminal-entry__error" id="terminalEntryError" hidden></p>
+                    <button class="terminal-entry__skip" id="terminalSkip" type="button">
+                        直接进入 →
+                    </button>
+                </div>
 
                 <div class="home-actions">
                     <a class="action-button turtle-entry" href="/turtle/" target="_blank" rel="noopener">
@@ -252,6 +273,7 @@
                 </div>
             </div>
         </div>
+        <div id="partnerDockMount" class="partner-dock-host"></div>
     </main>
 
     <!-- 分析结果页面 -->
@@ -277,10 +299,6 @@
                 <button class="workspace-tab" data-workspace="visualization" role="tab" aria-selected="false">
                     <span>AST 可视化</span>
                     <small>语法树与性能视图</small>
-                </button>
-                <button class="workspace-tab" data-workspace="chat" role="tab" aria-selected="false">
-                    <span>AI 答疑</span>
-                    <small>围绕当前代码追问</small>
                 </button>
             </nav>
 
@@ -378,6 +396,13 @@
         </div>
     </main>
 
+    <!-- 终端启动序列 -->
+    <div class="boot-overlay" id="bootOverlay" hidden>
+        <div class="boot-dialog">
+            <div class="boot-terminal" id="bootTerminal" aria-live="polite"></div>
+        </div>
+    </div>
+
     <!-- 加载动画 -->
     <div class="loading-overlay" id="loadingOverlay" hidden>
         <div class="loading-dialog">
@@ -399,6 +424,7 @@
 
     <noscript>请开启 JavaScript 以获得完整体验。</noscript>
     <script src="/tutor-assets/build/pytutor-embed.bundle.js?d7b0418262" charset="utf-8" defer></script>
+    <script src="{{ url_for('static', path='partner.js') }}?v={{ asset_version }}" defer></script>
     <script src="{{ url_for('static', path='app.js') }}?v={{ asset_version }}" defer></script>
 </body>
 </html>

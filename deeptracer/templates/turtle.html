@@ -7,6 +7,7 @@
     <meta name="description" content="Turtle 方向键绘图工具">
     <title>Turtle</title>
     <link rel="stylesheet" href="{{ url_for('static', path='turtle.css') }}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='partner.css') }}?v={{ asset_version }}">
 </head>
 <body>
     <header class="turtle-toolbar">
@@ -315,7 +316,9 @@
         </aside>
     </main>
 
+    <div id="turtlePartnerDockMount" class="partner-dock-host"></div>
     <div class="turtle-toast" id="turtleToast" role="status" aria-live="polite"></div>
+    <script src="{{ url_for('static', path='partner.js') }}?v={{ asset_version }}" defer></script>
     <script src="{{ url_for('static', path='turtle.js') }}?v={{ asset_version }}" defer></script>
 </body>
 </html>
