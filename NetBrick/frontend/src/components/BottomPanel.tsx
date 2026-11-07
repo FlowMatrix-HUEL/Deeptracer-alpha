@@ -6,7 +6,11 @@ import {
 } from "react";
 import { useGraphStore } from "../store";
 import { savePythonFile } from "../saveFile";
-import type { BottomPanel as BottomPanelName, Diagnostic } from "../types";
+import type {
+  BottomPanel as BottomPanelName,
+  Diagnostic,
+  Moment,
+} from "../types";
 import { Icon } from "./Icons";
 
 function DiagnosticRow({ item }: { item: Diagnostic }) {
@@ -215,8 +219,48 @@ function CodeView() {
 
 function TraceView() {
   const trace = useGraphStore((state) => state.trace);
+  const moments = useGraphStore((state) => state.moments);
   const runTracePreview = useGraphStore((state) => state.runTracePreview);
   const setSelectedNode = useGraphStore((state) => state.setSelectedNode);
+  const [activeMomentId, setActiveMomentId] = useState<string | null>(null);
+
+  const momentsByStep = new Map<number, Moment[]>();
+  moments.forEach((moment) => {
+    if (moment.step_index === null || moment.step_index === undefined) {
+      return;
+    }
+    const index = Number(moment.step_index);
+    if (Number.isFinite(index)) {
+      const list = momentsByStep.get(index) ?? [];
+      list.push(moment);
+      momentsByStep.set(index, list);
+    }
+  });
+
+  const focusMoment = (moment: Moment) => {
+    setActiveMomentId(moment.id);
+    if (moment.node_id) {
+      setSelectedNode(moment.node_id);
+    }
+    if (moment.step_index === null || moment.step_index === undefined) {
+      return;
+    }
+    const index = Number(moment.step_index);
+    if (Number.isFinite(index)) {
+      document
+        .querySelector(`[data-trace-step="${index}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  const nextMoment = () => {
+    if (!moments.length) return;
+    const currentIndex = moments.findIndex(
+      (moment) => moment.id === activeMomentId,
+    );
+    focusMoment(moments[(currentIndex + 1) % moments.length]);
+  };
+
   if (!trace) {
     return (
       <div className="panel-empty">
@@ -247,6 +291,38 @@ function TraceView() {
         <Icon name="info" size={15} />
         {trace.message}
       </div>
+      {moments.length > 0 && (
+        <div className="trace-moments">
+          <div className="trace-moments__head">
+            <strong>关键瞬间</strong>
+            <span className="trace-moments__count">{moments.length} 个</span>
+            <span
+              className="trace-moments__source"
+              title="由本地规则检测生成，不依赖 Agent；Agent 只会补充文案"
+            >
+              本地规则
+            </span>
+            <button type="button" onClick={nextMoment}>
+              下一个瞬间
+            </button>
+          </div>
+          <div className="trace-moments__list">
+            {moments.map((moment) => (
+              <button
+                type="button"
+                key={moment.id}
+                className={`trace-moment trace-moment--${moment.severity}${
+                  moment.id === activeMomentId ? " is-active" : ""
+                }`}
+                onClick={() => focusMoment(moment)}
+              >
+                <span className="trace-moment__label">{moment.label}</span>
+                <span className="trace-moment__why">{moment.why}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="trace-steps">
         {trace.steps.map((step) => (
           (() => {
@@ -258,11 +334,24 @@ function TraceView() {
                 : step.input_shape
                   ? `[${step.input_shape.join(", ")}]`
                   : "边界";
+            const stepMoments = momentsByStep.get(step.index) ?? [];
+            const worst = stepMoments.some(
+              (moment) => moment.severity === "error",
+            )
+              ? "error"
+              : stepMoments.some((moment) => moment.severity === "warning")
+                ? "warning"
+                : stepMoments.length
+                  ? "info"
+                  : "";
             return (
               <button
                 type="button"
-                className="trace-step"
+                className={`trace-step${
+                  worst ? ` trace-step--moment-${worst}` : ""
+                }`}
                 key={`${step.node_id}-${step.index}`}
+                data-trace-step={step.index}
                 onClick={() => setSelectedNode(step.node_id)}
               >
                 <span className="trace-step__index">
@@ -279,6 +368,20 @@ function TraceView() {
                   </span>
                 </span>
                 <code>{step.dtype ?? "—"}</code>
+                {stepMoments.length > 0 && (
+                  <span
+                    className={`trace-step__moment trace-step__moment--${worst}`}
+                    title={stepMoments
+                      .map((moment) => moment.label)
+                      .join("；")}
+                  >
+                    <Icon
+                      name={worst === "error" ? "warning" : "info"}
+                      size={11}
+                    />
+                    {stepMoments.length}
+                  </span>
+                )}
               </button>
             );
           })()

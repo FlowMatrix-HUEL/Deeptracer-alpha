@@ -81,7 +81,7 @@
                         <div>
                             <kbd>F8</kbd><i>下一步</i>
                             <kbd>F5</kbd><i>播放/暂停</i>
-                            <kbd>F6</kbd><i>重置</i>
+                            <kbd>F6</kbd><i>回到开头</i>
                         </div>
                     </div>
                 </details>
@@ -115,7 +115,8 @@
                         <span id="penStatus">画笔落下</span>
                     </div>
                     <div class="playback-controls" aria-label="执行控制">
-                        <button id="resetExecution" type="button" title="回到第一步">重置</button>
+                        <button id="resetExecution" type="button" title="回到第一步，不清空画布">回到开头</button>
+                        <button id="clearWorkspace" type="button" title="清空画布、代码和关键瞬间">清空</button>
                         <button id="stepExecution" type="button" title="执行下一行">下一步</button>
                         <button id="playExecution" type="button" title="继续或暂停">继续</button>
                         <label class="speed-control" title="播放速度">
@@ -128,6 +129,18 @@
                 <div class="canvas-stage">
                     <canvas id="turtleCanvas" tabindex="0"
                             aria-label="Turtle 绘图画布，点击后使用方向键控制"></canvas>
+                </div>
+                <div class="moment-rail" id="momentRail" hidden>
+                    <div class="moment-rail-head">
+                        <span class="moment-rail-title">关键瞬间</span>
+                        <span class="moment-rail-count" id="momentRailCount"></span>
+                        <span class="moment-rail-source" id="momentSource"
+                              title="由本地规则检测生成，不依赖 Agent；开启 Agent 后只会补充文案">本地规则</span>
+                        <button class="moment-next" id="momentNext" type="button">下一个瞬间</button>
+                        <button class="moment-toggle" id="momentToggle" type="button"
+                                aria-pressed="true">智能断点</button>
+                    </div>
+                    <div class="moment-rail-list" id="momentRailList"></div>
                 </div>
                 <details class="command-strip">
                     <summary class="command-strip-head">

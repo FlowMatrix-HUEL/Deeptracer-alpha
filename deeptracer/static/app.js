@@ -255,6 +255,11 @@ const state = {
     patchBusySuggestion: "",
     verificationResult: null,
     tutorLastStep: null,
+    tutorMoments: [],
+    activeTutorMomentId: null,
+    tutorMomentsEnabled: true,
+    tutorMomentEnrichTimer: 0,
+    tutorMomentEnrichRequest: 0,
     latestAnalysisTaskId: null,
     chatMessages: [],
     activeChatRequestId: 0,
@@ -322,6 +327,12 @@ function initElements() {
         syncTutor: document.getElementById("syncTutor"),
         tutorPlaceholder: document.getElementById("tutorPlaceholder"),
         tutorVisualizerMount: document.getElementById("tutorVisualizerMount"),
+        pythonMomentRail: document.getElementById("pythonMomentRail"),
+        pythonMomentList: document.getElementById("pythonMomentList"),
+        pythonMomentCount: document.getElementById("pythonMomentCount"),
+        pythonMomentSource: document.getElementById("pythonMomentSource"),
+        pythonMomentNext: document.getElementById("pythonMomentNext"),
+        pythonMomentToggle: document.getElementById("pythonMomentToggle"),
         tutorStage: document.querySelector(".tutor-stage"),
         executionModeTabs: document.getElementById("executionModeTabs"),
         executionViews: document.querySelectorAll("[data-execution-view]"),
@@ -1967,6 +1978,7 @@ function resetTutorSurface() {
         el.tutorPlaceholder.hidden = false;
         el.tutorPlaceholder.style.display = "";
     }
+    clearTutorMoments();
 }
 
 function queueTutorConnectorRedraw() {
@@ -2091,6 +2103,14 @@ function publishTutorStep(step) {
         line: entry.line,
         event: entry.event || ""
     };
+    const activeMoment = state.tutorMoments.find(
+        moment =>
+            moment.step_index !== null &&
+            moment.step_index !== undefined &&
+            Number(moment.step_index) === step
+    );
+    state.activeTutorMomentId = activeMoment ? activeMoment.id : null;
+    updateTutorMomentActiveState();
     const sourceRef = {
         fileId: state.fileId || "editor",
         sourceHash: currentSourceHash(),
@@ -2107,6 +2127,172 @@ function publishTutorStep(step) {
     });
     if (located) {
         syncTraceToTutorLine(entry.line);
+    }
+}
+
+function clearTutorMoments() {
+    state.tutorMoments = [];
+    state.activeTutorMomentId = null;
+    window.clearTimeout(state.tutorMomentEnrichTimer);
+    state.tutorMomentEnrichRequest += 1;
+    if (el.pythonMomentSource) {
+        el.pythonMomentSource.textContent = "本地规则";
+    }
+    renderTutorMomentRail();
+}
+
+function renderTutorMomentRail() {
+    if (!el.pythonMomentRail) return;
+    if (!state.tutorMomentsEnabled) {
+        el.pythonMomentRail.hidden = false;
+        el.pythonMomentCount.textContent = "已关闭";
+        el.pythonMomentList.replaceChildren();
+        return;
+    }
+    const moments = state.tutorMoments.filter(moment => moment && moment.id);
+    el.pythonMomentRail.hidden = moments.length === 0;
+    el.pythonMomentCount.textContent = moments.length ? `${moments.length} 个` : "";
+    if (!moments.length) {
+        el.pythonMomentList.replaceChildren();
+        return;
+    }
+    const fragment = document.createDocumentFragment();
+    moments.forEach(moment => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `moment-card moment-card--${moment.severity || "info"}`;
+        card.dataset.momentId = moment.id;
+        card.title = moment.why || moment.label || "";
+        if (moment.id === state.activeTutorMomentId) {
+            card.classList.add("is-active");
+        }
+        const label = document.createElement("span");
+        label.className = "moment-card__label";
+        label.textContent = moment.label || "关键瞬间";
+        const why = document.createElement("span");
+        why.className = "moment-card__why";
+        why.textContent = moment.why || "";
+        const meta = document.createElement("span");
+        meta.className = "moment-card__meta";
+        const hasLine =
+            moment.line !== null &&
+            moment.line !== undefined &&
+            Number.isFinite(Number(moment.line));
+        const hasStep =
+            moment.step_index !== null &&
+            moment.step_index !== undefined &&
+            Number.isFinite(Number(moment.step_index));
+        meta.textContent = [
+            hasLine ? `第 ${Number(moment.line)} 行` : "",
+            hasStep ? `第 ${Number(moment.step_index) + 1} 步` : ""
+        ].filter(Boolean).join(" · ");
+        card.append(label, why, meta);
+        card.addEventListener("click", () => {
+            if (hasStep) {
+                jumpToTutorStep(Number(moment.step_index));
+            }
+            state.activeTutorMomentId = moment.id;
+            updateTutorMomentActiveState();
+        });
+        fragment.appendChild(card);
+    });
+    el.pythonMomentList.replaceChildren(fragment);
+}
+
+function updateTutorMomentActiveState() {
+    if (!el.pythonMomentList) return;
+    el.pythonMomentList.querySelectorAll(".moment-card").forEach(card => {
+        card.classList.toggle(
+            "is-active",
+            card.dataset.momentId === state.activeTutorMomentId
+        );
+    });
+}
+
+function jumpToTutorStep(index) {
+    const visualizer = currentTutorVisualizer;
+    if (!visualizer) return;
+    const trace = visualizer.curTrace || [];
+    if (!trace.length) return;
+    const safeIndex = Math.max(0, Math.min(trace.length - 1, Number(index)));
+    if (!Number.isFinite(safeIndex)) return;
+    if (typeof visualizer.renderStep === "function") {
+        visualizer.renderStep(safeIndex);
+    } else if (Number.isFinite(visualizer.curInstr)) {
+        visualizer.curInstr = safeIndex;
+    }
+}
+
+function nextTutorMoment() {
+    const moments = state.tutorMoments.filter(moment => moment && moment.id);
+    if (!moments.length) return;
+    const currentIndex = moments.findIndex(
+        moment => moment.id === state.activeTutorMomentId
+    );
+    const next = moments[(currentIndex + 1) % moments.length];
+    if (next.step_index !== null && next.step_index !== undefined) {
+        const stepIndex = Number(next.step_index);
+        if (Number.isFinite(stepIndex)) {
+            jumpToTutorStep(stepIndex);
+        }
+    }
+    state.activeTutorMomentId = next.id;
+    updateTutorMomentActiveState();
+}
+
+function scheduleTutorMomentEnrichment() {
+    window.clearTimeout(state.tutorMomentEnrichTimer);
+    if (!state.tutorMomentsEnabled || !state.tutorMoments.length) return;
+    const requestId = state.tutorMomentEnrichRequest;
+    state.tutorMomentEnrichTimer = window.setTimeout(() => {
+        void enrichTutorMoments(requestId);
+    }, 800);
+}
+
+async function enrichTutorMoments(requestId) {
+    if (requestId !== state.tutorMomentEnrichRequest || !state.tutorMoments.length) {
+        return;
+    }
+    try {
+        const response = await fetch("/api/breakpoints/enrich", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                world: "python",
+                code: state.analyzedCode || el.sourceCode.value,
+                moments: state.tutorMoments
+            })
+        });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (requestId !== state.tutorMomentEnrichRequest) return;
+        const enriched = Array.isArray(payload.moments) ? payload.moments : [];
+        if (!enriched.some(moment => moment && moment.enriched)) return;
+        const byId = new Map(
+            enriched
+                .filter(moment => moment && moment.id)
+                .map(moment => [moment.id, moment])
+        );
+        state.tutorMoments = state.tutorMoments.map(moment => {
+            const update = byId.get(moment.id);
+            if (!update) return moment;
+            return {
+                ...moment,
+                label: update.label || moment.label,
+                why: update.why || moment.why,
+                question: update.question ?? moment.question,
+                importance: Number.isFinite(Number(update.importance))
+                    ? Number(update.importance)
+                    : moment.importance,
+                enriched: Boolean(update.enriched)
+            };
+        });
+        if (el.pythonMomentSource) {
+            el.pythonMomentSource.textContent = "本地规则 + AI 文案";
+        }
+        renderTutorMomentRail();
+    } catch (error) {
+        // Keep rule-based copy when the optional enrichment fails.
     }
 }
 
@@ -2854,7 +3040,13 @@ function finishAnalysis(code) {
 // 加载 pytutor 可视化
 async function loadTutorVisualization(code) {
     if (!code || !window.addVisualizerToPage) return;
-    
+
+    state.tutorMomentEnrichRequest += 1;
+    window.clearTimeout(state.tutorMomentEnrichTimer);
+    state.tutorMoments = [];
+    state.activeTutorMomentId = null;
+    renderTutorMomentRail();
+
     try {
         const response = await fetch("/api/tutor/trace", {
             method: "POST",
@@ -2880,6 +3072,22 @@ async function loadTutorVisualization(code) {
         );
         styleTutorVisualizer();
         bindTutorStepSync();
+        state.tutorMoments = Array.isArray(payload.moments) ? payload.moments : [];
+        if (el.pythonMomentSource) {
+            el.pythonMomentSource.textContent = "本地规则";
+        }
+        const startStep = Number(currentTutorVisualizer?.curInstr);
+        if (Number.isFinite(startStep)) {
+            const activeMoment = state.tutorMoments.find(
+                moment =>
+                    moment.step_index !== null &&
+                    moment.step_index !== undefined &&
+                    Number(moment.step_index) === startStep
+            );
+            state.activeTutorMomentId = activeMoment ? activeMoment.id : null;
+        }
+        renderTutorMomentRail();
+        scheduleTutorMomentEnrichment();
         queueTutorConnectorRedraw();
         window.setTimeout(reflowTutorVisualizer, 120);
         
@@ -3040,6 +3248,20 @@ function bindEvents() {
     el.syncTutor.addEventListener("click", () => {
         const code = el.sourceCode.value.trim() || state.currentCode;
         loadTutorVisualization(code);
+    });
+
+    el.pythonMomentNext?.addEventListener("click", nextTutorMoment);
+    el.pythonMomentToggle?.addEventListener("click", () => {
+        state.tutorMomentsEnabled = !state.tutorMomentsEnabled;
+        el.pythonMomentToggle.setAttribute(
+            "aria-pressed",
+            String(state.tutorMomentsEnabled)
+        );
+        el.pythonMomentToggle.textContent = state.tutorMomentsEnabled
+            ? "智能断点"
+            : "智能断点（关）";
+        renderTutorMomentRail();
+        if (state.tutorMomentsEnabled) scheduleTutorMomentEnrichment();
     });
 
     el.executionModeTabs.addEventListener("click", (event) => {

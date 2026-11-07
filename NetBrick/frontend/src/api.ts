@@ -7,6 +7,7 @@ import type {
   Framework,
   ImportResponse,
   IRDocument,
+  Moment,
   SampleSummary,
   TraceResponse,
 } from "./types";
@@ -52,6 +53,11 @@ export const api = {
     request<TraceResponse>("/api/v1/graphs/trace-preview", {
       method: "POST",
       body: JSON.stringify({ ir, seed: 42 }),
+    }),
+  moments: (trace: TraceResponse) =>
+    request<{ moments: Moment[] }>("/api/breakpoints", {
+      method: "POST",
+      body: JSON.stringify({ world: "netbrick", trace }),
     }),
   codegen: (ir: IRDocument, framework: Framework) =>
     request<CodegenResponse>("/api/v1/graphs/codegen", {

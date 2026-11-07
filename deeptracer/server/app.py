@@ -18,6 +18,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from deeptracer import DEEPTRACER_DEV_ROOT
+from deeptracer.breakpoints.enrich import enrich_moments
+from deeptracer.breakpoints.netbrick import detect_netbrick_moments
+from deeptracer.breakpoints.ranking import rank_moments
 from deeptracer.netbrick_support import get_netbrick_app, get_netbrick_dist
 from deeptracer.server.analysis_context import build_analysis_payload
 from deeptracer.server.chat_service import stream_chat_events
@@ -272,6 +275,47 @@ def create_app() -> FastAPI:
                 status_code=500,
                 detail=f"Turtle compile failed: {exc}",
             ) from exc
+
+    @app.post("/api/breakpoints", summary="Detect smart breakpoints for a trace")
+    async def breakpoints(payload: dict[str, Any]):
+        world = str(payload.get("world") or "").strip()
+        if world != "netbrick":
+            raise HTTPException(
+                status_code=400,
+                detail="Only world=netbrick is supported by this endpoint.",
+            )
+        trace = payload.get("trace")
+        if not isinstance(trace, dict):
+            raise HTTPException(status_code=400, detail="Missing required field: trace")
+        moments = rank_moments(detect_netbrick_moments(trace), limit=5)
+        return {"moments": [moment.model_dump() for moment in moments]}
+
+    @app.post("/api/breakpoints/enrich", summary="Optionally enrich smart breakpoint copy")
+    async def breakpoints_enrich(payload: dict[str, Any]):
+        world = str(payload.get("world") or "").strip()
+        if world not in {"python", "turtle", "netbrick"}:
+            raise HTTPException(
+                status_code=400,
+                detail="world must be one of python, turtle, netbrick.",
+            )
+        moments = payload.get("moments")
+        if not isinstance(moments, list):
+            raise HTTPException(status_code=400, detail="Missing required field: moments")
+        clean = [
+            moment
+            for moment in moments
+            if isinstance(moment, dict) and isinstance(moment.get("id"), str)
+        ]
+        if not clean:
+            return {"moments": []}
+        code = str(payload.get("code") or "")
+        enriched = await run_in_threadpool(
+            enrich_moments,
+            clean,
+            code=code,
+            world=world,
+        )
+        return {"moments": enriched}
 
     @app.post("/api/run", summary="Run Python code and return terminal output")
     async def run_python(payload: dict[str, Any]):

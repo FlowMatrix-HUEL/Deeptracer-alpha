@@ -11,6 +11,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from deeptracer.breakpoints.python import detect_tracer_moments
+from deeptracer.breakpoints.ranking import rank_moments
 from deeptracer.server.source_refs import (
     call_site_refs,
     hash_source,
@@ -122,6 +124,7 @@ def execute_tracer_trace(
     source_hash = hash_source(code)
     roots = build_trace_tree(result.get("traceLines") or [])
     _attach_trace_source_refs(roots, code, source_hash)
+    moments = rank_moments(detect_tracer_moments(roots), limit=5)
     return {
         **result,
         "traceTree": roots,
@@ -130,6 +133,7 @@ def execute_tracer_trace(
         "options": normalized_options,
         "sourceHash": source_hash,
         "fileId": "editor",
+        "moments": [moment.model_dump() for moment in moments],
     }
 
 

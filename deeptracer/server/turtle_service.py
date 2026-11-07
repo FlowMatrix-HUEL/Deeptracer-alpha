@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from deeptracer.breakpoints.ranking import rank_moments
+from deeptracer.breakpoints.turtle import detect_turtle_moments
 from deeptracer.tracer_support import get_tracer_python_path
 
 
@@ -56,7 +58,7 @@ if __name__ == "__main__":
 def compile_turtle_source(source: str) -> dict[str, Any]:
     code = source.strip("\n")
     if not code.strip():
-        return _empty_result("请输入至少一条 Turtle 指令。")
+        return _attach_moments(_empty_result("请输入至少一条 Turtle 指令。"), code)
 
     generated_code, source_start_line = build_standard_code(code)
     program_features = analyze_program_features(code)
@@ -93,37 +95,46 @@ def compile_turtle_source(source: str) -> dict[str, Any]:
     except subprocess.TimeoutExpired:
         _terminate_process_tree(process)
         process.communicate()
-        return {
-            **_empty_result("程序运行超时，请检查是否存在无限循环。"),
-            "generatedCode": generated_code,
-            "sourceStartLine": source_start_line,
-            "lineMap": _line_map(code, source_start_line),
-            "programFeatures": program_features,
-        }
+        return _attach_moments(
+            {
+                **_empty_result("程序运行超时，请检查是否存在无限循环。"),
+                "generatedCode": generated_code,
+                "sourceStartLine": source_start_line,
+                "lineMap": _line_map(code, source_start_line),
+                "programFeatures": program_features,
+            },
+            code,
+        )
 
     if process.returncode != 0:
         detail = (stderr or stdout or "").strip()
-        return {
-            **_empty_result(
-                "Turtle 教学执行器异常退出"
-                + (f"：{detail[-800:]}" if detail else "")
-            ),
-            "generatedCode": generated_code,
-            "sourceStartLine": source_start_line,
-            "lineMap": _line_map(code, source_start_line),
-            "programFeatures": program_features,
-        }
+        return _attach_moments(
+            {
+                **_empty_result(
+                    "Turtle 教学执行器异常退出"
+                    + (f"：{detail[-800:]}" if detail else "")
+                ),
+                "generatedCode": generated_code,
+                "sourceStartLine": source_start_line,
+                "lineMap": _line_map(code, source_start_line),
+                "programFeatures": program_features,
+            },
+            code,
+        )
 
     try:
         payload = json.loads(stdout)
     except json.JSONDecodeError:
-        return {
-            **_empty_result("Turtle 教学执行器没有返回有效结果。"),
-            "generatedCode": generated_code,
-            "sourceStartLine": source_start_line,
-            "lineMap": _line_map(code, source_start_line),
-            "programFeatures": program_features,
-        }
+        return _attach_moments(
+            {
+                **_empty_result("Turtle 教学执行器没有返回有效结果。"),
+                "generatedCode": generated_code,
+                "sourceStartLine": source_start_line,
+                "lineMap": _line_map(code, source_start_line),
+                "programFeatures": program_features,
+            },
+            code,
+        )
 
     source_lines = code.splitlines()
     steps = payload.get("steps") or []
@@ -138,6 +149,12 @@ def compile_turtle_source(source: str) -> dict[str, Any]:
     payload["programFeatures"] = program_features
     if payload.get("error"):
         payload["error"] = translate_turtle_error(payload["error"])
+    return _attach_moments(payload, code)
+
+
+def _attach_moments(payload: dict[str, Any], source: str) -> dict[str, Any]:
+    moments = rank_moments(detect_turtle_moments(payload, source=source), limit=5)
+    payload["moments"] = [moment.model_dump() for moment in moments]
     return payload
 
 

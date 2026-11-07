@@ -19,6 +19,7 @@ export interface FlowNodeData extends Record<string, unknown> {
   analysis?: NodeAnalysis;
   invalid?: boolean;
   framework: Framework;
+  connectionPin?: { nodeId: string; port: string } | null;
 }
 
 export type OperationFlowNode = Node<FlowNodeData, "operation">;
@@ -112,7 +113,11 @@ export function OperationNode({ data, selected }: NodeProps<OperationFlowNode>) 
           position={Position.Left}
           id={port}
           className="flow-handle flow-handle--input"
-          title={`输入端口 ${port}：接收 Tensor`}
+          title={
+            data.connectionPin
+              ? `点击连接到 ${data.connectionPin.nodeId}.${data.connectionPin.port}`
+              : `输入端口 ${port}：接收 Tensor`
+          }
           style={
             multipleInputs
               ? { top: `${((index + 1) * 100) / (inputs.length + 1)}%` }
@@ -147,21 +152,26 @@ export function OperationNode({ data, selected }: NodeProps<OperationFlowNode>) 
         <span className="flow-node__shape">{formatShape(displayShape)}</span>
       </div>
       {!isOutput &&
-        (outputs.length ? outputs : ["out"]).map((port, index) => (
+        (outputs.length ? outputs : ["out"]).map((port, index) => {
+          const isPinned =
+            data.connectionPin?.nodeId === graphNode.id &&
+            data.connectionPin?.port === port;
+          return (
           <Handle
             key={port}
             type="source"
             position={Position.Right}
             id={port}
-            className="flow-handle flow-handle--output"
-            title={`输出端口 ${port}`}
+            className={`flow-handle flow-handle--output ${isPinned ? "is-pinned" : ""}`}
+            title={`输出端口 ${port}：点击固定后，可连续连接多个输入`}
             style={
               multipleOutputs
                 ? { top: `${((index + 1) * 100) / (outputs.length + 1)}%` }
                 : undefined
             }
           />
-        ))}
+          );
+        })}
     </div>
   );
 }

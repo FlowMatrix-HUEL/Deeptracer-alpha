@@ -29,6 +29,7 @@
         copyCode: document.getElementById("copyTurtleCode"),
         toast: document.getElementById("turtleToast"),
         resetExecution: document.getElementById("resetExecution"),
+        clearWorkspace: document.getElementById("clearWorkspace"),
         stepExecution: document.getElementById("stepExecution"),
         playExecution: document.getElementById("playExecution"),
         playbackSpeed: document.getElementById("playbackSpeed"),
@@ -39,6 +40,12 @@
         studentLineHighlight: document.getElementById("studentLineHighlight"),
         studentLineHover: document.getElementById("studentLineHover"),
         compileStatus: document.getElementById("compileStatus"),
+        momentRail: document.getElementById("momentRail"),
+        momentRailList: document.getElementById("momentRailList"),
+        momentRailCount: document.getElementById("momentRailCount"),
+        momentSource: document.getElementById("momentSource"),
+        momentNext: document.getElementById("momentNext"),
+        momentToggle: document.getElementById("momentToggle"),
         turtleError: document.getElementById("turtleError"),
         variableList: document.getElementById("variableList"),
         turtleStateList: document.getElementById("turtleStateList"),
@@ -98,7 +105,12 @@
         interactiveCode: false,
         works: [],
         activeWorkId: "",
-        previewCleared: false
+        previewCleared: false,
+        moments: [],
+        activeMomentId: null,
+        momentsEnabled: true,
+        momentEnrichTimer: 0,
+        momentEnrichRequest: 0
     };
 
     const compass = ["东", "东北", "北", "西北", "西", "西南", "南", "东南"];
@@ -391,9 +403,45 @@
     }
 
     function clear() {
+        clearWorkspace();
+    }
+
+    function clearWorkspace() {
+        pausePlayback();
+        state.compileRequest += 1;
+        window.clearTimeout(state.compileTimer);
+        state.momentEnrichRequest += 1;
+        window.clearTimeout(state.momentEnrichTimer);
         state.commands = [];
         state.filling = false;
-        refresh();
+        state.sourceMode = "auto";
+        state.compileResult = null;
+        state.moments = [];
+        state.activeMomentId = null;
+        state.breakpoints.clear();
+        state.executionIndex = -1;
+        state.previewCleared = true;
+        state.highlightedSourceLine = null;
+        state.highlightedSourceIsError = false;
+        state.taskAwaitingCheck = false;
+        state.taskPassed = false;
+        elements.studentSource.value = "";
+        updateStudentLineNumbers();
+        renderMomentRail();
+        renderHistory();
+        renderPattern(null);
+        renderVariables(null);
+        renderNarration(null);
+        renderTaskFeedback(null, []);
+        elements.turtleError.hidden = true;
+        elements.turtleError.innerHTML = "";
+        elements.commandCount.textContent = "0";
+        resetExecution();
+        elements.compileStatus.textContent = "等待输入";
+        if (elements.momentSource) {
+            elements.momentSource.textContent = "本地规则";
+        }
+        showToast("已清空画布、代码和关键瞬间");
     }
 
     function drawSquare() {
@@ -862,6 +910,7 @@
 
     function updateStudentLineNumbers() {
         const count = Math.max(1, elements.studentSource.value.split("\n").length);
+        const momentLineSet = momentLines();
         const fragment = document.createDocumentFragment();
         for (let line = 1; line <= count; line += 1) {
             const number = document.createElement("span");
@@ -870,6 +919,9 @@
             number.textContent = String(line);
             if (state.breakpoints.has(line)) {
                 number.classList.add("has-breakpoint");
+            }
+            if (momentLineSet.has(line)) {
+                number.classList.add("has-moment");
             }
             fragment.appendChild(number);
         }
@@ -886,6 +938,8 @@
 
     function scheduleCompile(delay = 220) {
         window.clearTimeout(state.compileTimer);
+        state.momentEnrichRequest += 1;
+        window.clearTimeout(state.momentEnrichTimer);
         const request = ++state.compileRequest;
         elements.compileStatus.textContent = "正在分析";
         state.compileTimer = window.setTimeout(
@@ -895,6 +949,8 @@
     }
 
     async function compileStudentSource(request = ++state.compileRequest) {
+        state.momentEnrichRequest += 1;
+        window.clearTimeout(state.momentEnrichTimer);
         const source = elements.studentSource.value;
         try {
             const response = await fetch("/api/turtle/compile", {
@@ -928,6 +984,14 @@
     function applyCompileResult(result) {
         state.compileResult = result;
         state.generatedCode = result.generatedCode || "";
+        state.moments = Array.isArray(result.moments) ? result.moments : [];
+        state.activeMomentId = null;
+        if (elements.momentSource) {
+            elements.momentSource.textContent = "本地规则";
+        }
+        renderMomentRail();
+        updateStudentLineNumbers();
+        scheduleMomentEnrichment();
         syncControlsFromResult(result);
         renderGeneratedCode(
             displayedGeneratedCode(result.generatedCode || ""),
@@ -1710,6 +1774,14 @@
         }
         const safeIndex = Math.max(0, Math.min(steps.length - 1, index));
         state.executionIndex = safeIndex;
+        const activeMoment = state.moments.find(
+            moment =>
+                moment.step_index !== null &&
+                moment.step_index !== undefined &&
+                Number(moment.step_index) === safeIndex
+        );
+        state.activeMomentId = activeMoment ? activeMoment.id : null;
+        updateMomentActiveState();
         state.previewCleared = false;
         const step = steps[safeIndex];
         drawScene(
@@ -1734,6 +1806,152 @@
             state.playing = false;
             elements.playExecution.textContent = "继续";
             elements.playExecution.classList.remove("is-active");
+        }
+    }
+
+    function momentLines() {
+        if (!state.momentsEnabled) return new Set();
+        return new Set(
+            state.moments
+                .map(moment => Number(moment.line))
+                .filter(line => Number.isFinite(line) && line > 0)
+        );
+    }
+
+    function renderMomentRail() {
+        if (!elements.momentRail) return;
+        if (!state.momentsEnabled) {
+            elements.momentRail.hidden = false;
+            elements.momentRailCount.textContent = "已关闭";
+            elements.momentRailList.replaceChildren();
+            return;
+        }
+        const moments = state.moments.filter(moment => moment && moment.id);
+        elements.momentRail.hidden = moments.length === 0;
+        elements.momentRailCount.textContent = moments.length
+            ? `${moments.length} 个`
+            : "";
+        if (!moments.length) {
+            elements.momentRailList.replaceChildren();
+            return;
+        }
+        const fragment = document.createDocumentFragment();
+        moments.forEach(moment => {
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = `moment-card moment-card--${moment.severity || "info"}`;
+            card.dataset.momentId = moment.id;
+            card.title = moment.why || moment.label || "";
+            if (moment.id === state.activeMomentId) {
+                card.classList.add("is-active");
+            }
+            const label = document.createElement("span");
+            label.className = "moment-card__label";
+            label.textContent = moment.label || "关键瞬间";
+            const why = document.createElement("span");
+            why.className = "moment-card__why";
+            why.textContent = moment.why || "";
+            const meta = document.createElement("span");
+            meta.className = "moment-card__meta";
+            const hasStep =
+                moment.step_index !== null &&
+                moment.step_index !== undefined &&
+                Number.isFinite(Number(moment.step_index));
+            meta.textContent = hasStep
+                ? `第 ${Number(moment.step_index) + 1} 步`
+                : "";
+            card.append(label, why, meta);
+            card.addEventListener("click", () => {
+                if (hasStep) {
+                    renderExecutionStep(Number(moment.step_index));
+                }
+                state.activeMomentId = moment.id;
+                updateMomentActiveState();
+            });
+            fragment.appendChild(card);
+        });
+        elements.momentRailList.replaceChildren(fragment);
+    }
+
+    function updateMomentActiveState() {
+        if (!elements.momentRailList) return;
+        elements.momentRailList.querySelectorAll(".moment-card").forEach(card => {
+            card.classList.toggle(
+                "is-active",
+                card.dataset.momentId === state.activeMomentId
+            );
+        });
+    }
+
+    function nextMoment() {
+        const moments = state.moments.filter(moment => moment && moment.id);
+        if (!moments.length) return;
+        const currentIndex = moments.findIndex(
+            moment => moment.id === state.activeMomentId
+        );
+        const next = moments[(currentIndex + 1) % moments.length];
+        if (next.step_index !== null && next.step_index !== undefined) {
+            const stepIndex = Number(next.step_index);
+            if (Number.isFinite(stepIndex)) {
+                renderExecutionStep(stepIndex);
+            }
+        }
+        state.activeMomentId = next.id;
+        updateMomentActiveState();
+    }
+
+    function scheduleMomentEnrichment() {
+        window.clearTimeout(state.momentEnrichTimer);
+        if (!state.momentsEnabled || !state.moments.length) return;
+        const requestId = state.momentEnrichRequest;
+        const source = elements.studentSource.value;
+        state.momentEnrichTimer = window.setTimeout(() => {
+            void enrichMomentCopy(requestId, source);
+        }, 800);
+    }
+
+    async function enrichMomentCopy(requestId, source) {
+        if (requestId !== state.momentEnrichRequest || !state.moments.length) return;
+        try {
+            const response = await fetch("/api/breakpoints/enrich", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    world: "turtle",
+                    code: source,
+                    moments: state.moments
+                })
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            if (requestId !== state.momentEnrichRequest) return;
+            const enriched = Array.isArray(payload.moments) ? payload.moments : [];
+            if (!enriched.some(moment => moment && moment.enriched)) return;
+            const byId = new Map(
+                enriched
+                    .filter(moment => moment && moment.id)
+                    .map(moment => [moment.id, moment])
+            );
+            state.moments = state.moments.map(moment => {
+                const update = byId.get(moment.id);
+                if (!update) return moment;
+                return {
+                    ...moment,
+                    label: update.label || moment.label,
+                    why: update.why || moment.why,
+                    question: update.question ?? moment.question,
+                    importance: Number.isFinite(Number(update.importance))
+                        ? Number(update.importance)
+                        : moment.importance,
+                    enriched: Boolean(update.enriched)
+                };
+            });
+            if (elements.momentSource) {
+                elements.momentSource.textContent = "本地规则 + AI 文案";
+            }
+            renderMomentRail();
+        } catch (error) {
+            // Keep rule-based copy when the optional enrichment fails.
         }
     }
 
@@ -2486,9 +2704,24 @@
     });
     elements.copyCode.addEventListener("click", copyCode);
     elements.resetExecution.addEventListener("click", resetExecution);
+    elements.clearWorkspace?.addEventListener("click", clearWorkspace);
     elements.stepExecution.addEventListener("click", stepExecution);
     elements.playExecution.addEventListener("click", togglePlayback);
     elements.fullSpeedExecution.addEventListener("click", fullSpeedExecution);
+    elements.momentNext?.addEventListener("click", nextMoment);
+    elements.momentToggle?.addEventListener("click", () => {
+        state.momentsEnabled = !state.momentsEnabled;
+        elements.momentToggle.setAttribute(
+            "aria-pressed",
+            String(state.momentsEnabled)
+        );
+        elements.momentToggle.textContent = state.momentsEnabled
+            ? "智能断点"
+            : "智能断点（关）";
+        renderMomentRail();
+        updateStudentLineNumbers();
+        if (state.momentsEnabled) scheduleMomentEnrichment();
+    });
     elements.playbackSpeed.addEventListener("input", () => {
         const speed = playbackSpeeds[Number(elements.playbackSpeed.value)] || 1;
         elements.playbackSpeedValue.textContent = `${speed}x`;

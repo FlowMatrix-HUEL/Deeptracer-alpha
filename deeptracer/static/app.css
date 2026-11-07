@@ -715,6 +715,154 @@ body.is-loading {
     overflow: auto;
 }
 
+.moment-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+}
+
+.moment-rail[hidden] {
+    display: none;
+}
+
+.moment-rail-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.74rem;
+}
+
+.moment-rail-title {
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.moment-rail-count {
+    color: var(--muted);
+}
+
+.moment-rail-source {
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.66rem;
+    font-weight: 700;
+}
+
+.moment-next,
+.moment-toggle {
+    padding: 1px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.moment-next:hover,
+.moment-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.moment-toggle[aria-pressed="false"] {
+    color: var(--muted);
+    opacity: 0.65;
+}
+
+.moment-rail-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-top: 0;
+    scrollbar-width: none;
+}
+
+.moment-rail-list::-webkit-scrollbar {
+    display: none;
+}
+
+.moment-card {
+    flex: 0 0 auto;
+    width: 236px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+.moment-card:hover {
+    border-color: var(--accent);
+}
+
+.moment-card.is-active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.moment-card__label {
+    position: relative;
+    display: block;
+    padding-left: 11px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.moment-card__label::before {
+    position: absolute;
+    top: 0.48em;
+    left: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    content: "";
+}
+
+.moment-card--error .moment-card__label::before {
+    background: var(--danger);
+}
+
+.moment-card--warning .moment-card__label::before {
+    background: #c77b1f;
+}
+
+.moment-card__why {
+    display: -webkit-box;
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.moment-card__meta {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.68rem;
+}
+
 .execution-panel-header {
     align-items: flex-start;
 }

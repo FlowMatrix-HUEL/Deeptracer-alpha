@@ -1081,6 +1081,166 @@ select:focus-visible {
   font-size: 9px;
 }
 
+.trace-moments {
+  padding: 8px 12px 0;
+}
+
+.trace-moments__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6d7c74;
+  font-size: 9px;
+}
+
+.trace-moments__head strong {
+  color: #334e42;
+}
+
+.trace-moments__count {
+  margin-right: auto;
+}
+
+.trace-moments__source {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #eef6f1;
+  color: #3d6b55;
+  font-size: 7.5px;
+  font-weight: 700;
+}
+
+.trace-moments__head button {
+  padding: 2px 7px;
+  border: 1px solid #dce5de;
+  border-radius: 6px;
+  background: #fff;
+  color: #456457;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.trace-moments__head button:hover {
+  border-color: #a9c8ba;
+  color: #2f6b50;
+}
+
+.trace-moments__list {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.trace-moments__list::-webkit-scrollbar {
+  display: none;
+}
+
+.trace-moment {
+  flex: 0 0 auto;
+  width: 220px;
+  padding: 7px 9px;
+  border: 1px solid #e3e8e2;
+  border-radius: 7px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.trace-moment:hover {
+  border-color: #a9c8ba;
+}
+
+.trace-moment.is-active {
+  border-color: #a9c8ba;
+  background: #f2f7f2;
+}
+
+.trace-moment__label,
+.trace-moment__why {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trace-moment__label {
+  position: relative;
+  padding-left: 10px;
+  color: #334e42;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.trace-moment__label::before {
+  position: absolute;
+  top: 0.45em;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #6f8d7f;
+  content: "";
+}
+
+.trace-moment--error .trace-moment__label::before {
+  background: #c24141;
+}
+
+.trace-moment--warning .trace-moment__label::before {
+  background: #c77b1f;
+}
+
+.trace-moment--info .trace-moment__label::before {
+  background: #6f8d7f;
+}
+
+.trace-moment__why {
+  margin-top: 2px;
+  color: #8b9891;
+  font-size: 8px;
+}
+
+.trace-step--moment-error {
+  border-color: #c24141;
+}
+
+.trace-step--moment-warning {
+  border-color: #c77b1f;
+}
+
+.trace-step--moment-info {
+  border-color: #6f8d7f;
+}
+
+.trace-step__moment {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-size: 7.5px;
+}
+
+.trace-step__moment--error {
+  background: #fdecec;
+  color: #c24141;
+}
+
+.trace-step__moment--warning {
+  background: #fff5e6;
+  color: #c77b1f;
+}
+
+.trace-step__moment--info {
+  background: #eef6f1;
+  color: #3d6b55;
+}
+
 .trace-steps {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
@@ -3658,6 +3818,52 @@ body,
 
 .busy-line {
   background: linear-gradient(90deg, transparent, #3370ff, transparent);
+}
+
+.canvas-branch-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #3370ff;
+  font-size: 8.5px;
+  font-weight: 650;
+  pointer-events: auto;
+}
+
+.canvas-branch-pin i {
+  color: #86909c;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.canvas-branch-pin button {
+  padding: 0 0 1px;
+  color: #3370ff;
+  border-bottom: 1px solid #3370ff;
+  background: transparent;
+  font-size: 8.5px;
+}
+
+.flow-handle--output.is-pinned.react-flow__handle {
+  width: 14px;
+  height: 14px;
+  background: #3370ff;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 5px rgba(51, 112, 255, 0.2);
+}
+
+.canvas-shell.is-branch-connecting .flow-handle--input.react-flow__handle {
+  cursor: copy;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 5px rgba(51, 112, 255, 0.18);
+}
+
+.canvas-shell.is-branch-connecting .flow-handle--input.react-flow__handle:hover {
+  width: 14px;
+  height: 14px;
+  background: #3370ff;
 }
 
 @media (max-width: 1320px) {

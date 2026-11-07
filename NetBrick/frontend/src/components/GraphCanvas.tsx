@@ -13,7 +13,14 @@ import {
   type NodeChange,
   type OnSelectionChangeParams,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { inputPortIds, outputPortIds } from "../flowPorts";
 import { useGraphStore } from "../store";
 import type { GraphEdge, GraphNode, NodeAnalysis, Position } from "../types";
@@ -115,6 +122,10 @@ function FlowCanvas() {
   const [flowEdges, setFlowEdges] = useState<DataFlowEdge[]>([]);
   const [zoom, setZoom] = useState(1);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [connectionPin, setConnectionPin] = useState<{
+    nodeId: string;
+    port: string;
+  } | null>(null);
   const {
     screenToFlowPosition,
     fitView,
@@ -126,6 +137,124 @@ function FlowCanvas() {
   const analysisMap = useMemo(
     () => new Map((analysis?.nodes ?? []).map((item) => [item.node_id, item])),
     [analysis],
+  );
+
+  const canConnect = useCallback(
+    (
+      sourceId: string,
+      sourcePort: string,
+      targetId: string,
+      targetPort: string,
+    ) => {
+      if (sourceId === targetId) return false;
+      const source = getNodes().find((node) => node.id === sourceId);
+      const target = getNodes().find((node) => node.id === targetId);
+      if (!source || !target) return false;
+      if (source.data.graphNode.op === "Output") return false;
+      if (target.data.graphNode.op === "Input") return false;
+      if (
+        !outputPortIds(source.data.graphNode, source.data.block).includes(
+          sourcePort,
+        ) ||
+        !inputPortIds(target.data.graphNode, target.data.block).includes(
+          targetPort,
+        )
+      ) {
+        return false;
+      }
+      if (
+        target.data.block?.input_mode !== "merge" &&
+        flowEdges.some(
+          (edge) =>
+            edge.target === targetId && edge.targetHandle === targetPort,
+        )
+      ) {
+        return false;
+      }
+      return !flowEdges.some(
+        (edge) =>
+          edge.source === sourceId &&
+          edge.sourceHandle === sourcePort &&
+          edge.target === targetId &&
+          edge.targetHandle === targetPort,
+      );
+    },
+    [flowEdges, getNodes],
+  );
+
+  const pinConnectionSource = useCallback(
+    (nodeId: string, port: string) => {
+      if (readOnly) {
+        showToast("info", "当前复合资源版本为只读");
+        return;
+      }
+      setConnectionPin((current) => {
+        const same =
+          current?.nodeId === nodeId && current?.port === port;
+        if (same) {
+          showToast("info", "已结束分支连接");
+          return null;
+        }
+        showToast(
+          "info",
+          `已固定 ${nodeId}.${port}，现在可连续点击多个输入端口`,
+        );
+        return { nodeId, port };
+      });
+    },
+    [readOnly, showToast],
+  );
+
+  const connectFromPinnedSource = useCallback(
+    (targetId: string, targetPort: string) => {
+      if (!connectionPin) return;
+      if (
+        !canConnect(
+          connectionPin.nodeId,
+          connectionPin.port,
+          targetId,
+          targetPort,
+        )
+      ) {
+        showToast("info", "该输入端口已有连线，或不能接收当前分支");
+        return;
+      }
+      connect(
+        connectionPin.nodeId,
+        targetId,
+        targetPort,
+        connectionPin.port,
+      );
+    },
+    [canConnect, connect, connectionPin, showToast],
+  );
+
+  const handleHandleClick = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      const handle = (event.target as Element).closest<HTMLElement>(
+        ".react-flow__handle",
+      );
+      if (!handle || readOnly) return;
+      const nodeId = handle.dataset.nodeid;
+      const port = handle.dataset.handleid;
+      if (!nodeId || !port) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (handle.classList.contains("flow-handle--output")) {
+        pinConnectionSource(nodeId, port);
+      } else if (
+        handle.classList.contains("flow-handle--input") &&
+        connectionPin
+      ) {
+        connectFromPinnedSource(nodeId, port);
+      }
+    },
+    [
+      connectFromPinnedSource,
+      connectionPin,
+      pinConnectionSource,
+      readOnly,
+    ],
   );
 
   useEffect(() => {
@@ -152,6 +281,7 @@ function FlowCanvas() {
         analysis: analysisMap.get(node.id),
         invalid: invalidNodeIds.has(node.id),
         framework: ir.target_framework,
+        connectionPin,
       };
       return {
         id: node.id,
@@ -198,7 +328,18 @@ function FlowCanvas() {
         void fitView({ padding: 0.18, minZoom: 0.45, maxZoom: 1.05 });
       }, 60);
     }
-  }, [analysis, analysisMap, catalog, fitView, ir]);
+  }, [
+    analysis,
+    analysisMap,
+    catalog,
+    connectionPin,
+    fitView,
+    ir,
+  ]);
+
+  useEffect(() => {
+    setConnectionPin(null);
+  }, [activeView.kind, activeView.controlNodeId, activeView.regionId]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<OperationFlowNode>[]) => {
@@ -336,6 +477,12 @@ function FlowCanvas() {
       ) {
         return;
       }
+      if (event.key === "Escape" && connectionPin) {
+        event.preventDefault();
+        setConnectionPin(null);
+        showToast("info", "已结束分支连接");
+        return;
+      }
       if (!event.ctrlKey && !event.metaKey) return;
       if (event.key.toLowerCase() === "c") {
         const ids = selectedIds();
@@ -359,7 +506,13 @@ function FlowCanvas() {
     };
     window.addEventListener("keydown", handleClipboard);
     return () => window.removeEventListener("keydown", handleClipboard);
-  }, [copySelection, pasteSelection, screenToFlowPosition]);
+  }, [
+    connectionPin,
+    copySelection,
+    pasteSelection,
+    screenToFlowPosition,
+    showToast,
+  ]);
 
   const packSelection = () => {
     if (contextIdsRef.current.length < 2) {
@@ -377,39 +530,12 @@ function FlowCanvas() {
 
   const isValidConnection = (connection: Connection | DataFlowEdge) => {
     if (!connection.source || !connection.target) return false;
-    if (connection.source === connection.target) return false;
-    const source = getNodes().find((node) => node.id === connection.source);
-    const target = getNodes().find((node) => node.id === connection.target);
-    if (!source || !target) return false;
-    if (source.data.graphNode.op === "Output") return false;
-    if (target.data.graphNode.op === "Input") return false;
-    if (
-      !connection.sourceHandle ||
-      !outputPortIds(
-        source.data.graphNode,
-        source.data.block,
-      ).includes(connection.sourceHandle) ||
-      !connection.targetHandle ||
-      !inputPortIds(target.data.graphNode, target.data.block).includes(
-        connection.targetHandle,
-      )
-    ) {
-      return false;
-    }
-    if (
-      target.data.block?.input_mode !== "merge" &&
-      flowEdges.some(
-        (edge) =>
-          edge.target === connection.target &&
-          edge.targetHandle === connection.targetHandle,
-      )
-    ) {
-      return false;
-    }
-    return !flowEdges.some(
-      (edge) =>
-        edge.source === connection.source &&
-        edge.target === connection.target,
+    if (!connection.sourceHandle || !connection.targetHandle) return false;
+    return canConnect(
+      connection.source,
+      connection.sourceHandle,
+      connection.target,
+      connection.targetHandle,
     );
   };
 
@@ -418,7 +544,8 @@ function FlowCanvas() {
   return (
     <div
       ref={shellRef}
-      className="canvas-shell"
+      className={`canvas-shell ${connectionPin ? "is-branch-connecting" : ""}`}
+      onClickCapture={handleHandleClick}
       onDragOver={(event) => {
         if (
           event.dataTransfer.types.includes("application/netbrick-block") ||
@@ -540,9 +667,19 @@ function FlowCanvas() {
           <span />
           {analysis?.valid ? "结构可用" : "结构存在冲突"}
         </span>
-        <span className="canvas-hint">
-          双击连线可删除 · Shift 多选 · 右键拖动画布
-        </span>
+        {connectionPin ? (
+          <span className="canvas-branch-pin">
+            分支连接：{connectionPin.nodeId}.{connectionPin.port}
+            <i>点击多个输入端口完成连接</i>
+            <button type="button" onClick={() => setConnectionPin(null)}>
+              结束
+            </button>
+          </span>
+        ) : (
+          <span className="canvas-hint">
+            双击连线可删除 · Shift 多选 · 右键拖动画布
+          </span>
+        )}
       </div>
       <ReactFlow<OperationFlowNode, DataFlowEdge>
         nodes={flowNodes}
@@ -598,6 +735,7 @@ function FlowCanvas() {
               connection.source,
               connection.target,
               connection.targetHandle ?? "x",
+              connection.sourceHandle ?? "out",
             );
           }
         }}

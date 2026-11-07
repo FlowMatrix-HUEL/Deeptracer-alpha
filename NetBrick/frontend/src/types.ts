@@ -216,6 +216,28 @@ export interface TraceResponse {
   diagnostics: Diagnostic[];
 }
 
+export interface Moment {
+  id: string;
+  world: "python" | "turtle" | "netbrick";
+  kind: string;
+  concepts: string[];
+  severity: "info" | "warning" | "error";
+  importance: number;
+  step_index?: number | null;
+  node_id?: string | null;
+  line?: number | null;
+  source_ref?: Record<string, unknown> | null;
+  label: string;
+  why: string;
+  question?: string | null;
+  evidence: Array<Record<string, unknown>>;
+  expected?: unknown;
+  actual?: unknown;
+  tags: string[];
+  confidence: number;
+  enriched: boolean;
+}
+
 export interface CodegenResponse {
   filename: string;
   source: string;

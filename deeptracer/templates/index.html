@@ -149,6 +149,18 @@
                     </div>
 
                     <div class="execution-view" id="tutorExecutionView" data-execution-view="tutor">
+                        <div class="moment-rail" id="pythonMomentRail" hidden>
+                            <div class="moment-rail-head">
+                                <span class="moment-rail-title">关键瞬间</span>
+                                <span class="moment-rail-count" id="pythonMomentCount"></span>
+                                <span class="moment-rail-source" id="pythonMomentSource"
+                                      title="由本地规则检测生成，不依赖 Agent；开启 Agent 后只会补充文案">本地规则</span>
+                                <button class="moment-next" id="pythonMomentNext" type="button">下一个瞬间</button>
+                                <button class="moment-toggle" id="pythonMomentToggle" type="button"
+                                        aria-pressed="true">智能断点</button>
+                            </div>
+                            <div class="moment-rail-list" id="pythonMomentList"></div>
+                        </div>
                         <div class="tutor-stage">
                             <div class="tutor-placeholder" id="tutorPlaceholder">
                                 <div class="placeholder-icon">🎯</div>

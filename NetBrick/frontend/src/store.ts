@@ -21,6 +21,7 @@ import type {
   GraphRegion,
   IRDocument,
   MojoAsset,
+  Moment,
   Position,
   PortContract,
   SampleSummary,
@@ -64,6 +65,7 @@ interface GraphState {
   bottomPanel: BottomPanel | null;
   code: CodegenResponse | null;
   trace: TraceResponse | null;
+  moments: Moment[];
   undoStack: IRDocument[];
   redoStack: IRDocument[];
   busy: boolean;
@@ -82,7 +84,12 @@ interface GraphState {
   updateNodeParam: (id: string, key: string, value: unknown) => void;
   removeSelectedNode: () => void;
   removeNode: (id: string) => void;
-  connect: (sourceId: string, targetId: string, targetPort: string) => void;
+  connect: (
+    sourceId: string,
+    targetId: string,
+    targetPort: string,
+    sourcePort?: string,
+  ) => void;
   removeEdge: (edgeId: string) => void;
   clearGraph: () => void;
   addSubgraph: (
@@ -100,6 +107,7 @@ interface GraphState {
   validateNow: () => Promise<void>;
   generateCode: () => Promise<CodegenResponse | null>;
   runTracePreview: () => Promise<void>;
+  runMomentDetection: () => Promise<void>;
   setBottomPanel: (panel: BottomPanel | null) => void;
   showToast: (kind: Toast["kind"], message: string) => void;
   clearToast: () => void;
@@ -561,6 +569,7 @@ export const useGraphStore = create<GraphState>((set, get) => {
       redoStack: [],
       code: null,
       trace: null,
+      moments: [],
       dirty: true,
     });
   };
@@ -570,6 +579,7 @@ export const useGraphStore = create<GraphState>((set, get) => {
       ir,
       code: null,
       trace: null,
+      moments: [],
       analysis: null,
       dirty: false,
     });
@@ -600,6 +610,7 @@ export const useGraphStore = create<GraphState>((set, get) => {
     bottomPanel: "diagnostics",
     code: null,
     trace: null,
+    moments: [],
     undoStack: [],
     redoStack: [],
     busy: false,
@@ -813,12 +824,13 @@ export const useGraphStore = create<GraphState>((set, get) => {
       void get().validateNow();
     },
 
-    connect: (sourceId, targetId, targetPort) => {
+    connect: (sourceId, targetId, targetPort, sourcePort = "out") => {
       const { ir, catalog } = get();
       if (
         ir.graph.edges.some(
           (edge) =>
             edge.source.node_id === sourceId &&
+            edge.source.port === sourcePort &&
             edge.target.node_id === targetId &&
             edge.target.port === targetPort,
         )
@@ -827,7 +839,7 @@ export const useGraphStore = create<GraphState>((set, get) => {
       }
       const edge: GraphEdge = {
         id: uid("edge"),
-        source: { node_id: sourceId, port: "out" },
+        source: { node_id: sourceId, port: sourcePort },
         target: { node_id: targetId, port: targetPort },
       };
       const targetNode = ir.graph.nodes.find((node) => node.id === targetId);
@@ -1072,6 +1084,7 @@ export const useGraphStore = create<GraphState>((set, get) => {
         const trace = await api.trace(get().ir);
         set({
           trace,
+          moments: [],
           bottomPanel: "trace",
           busy: false,
           toast:
@@ -1079,6 +1092,7 @@ export const useGraphStore = create<GraphState>((set, get) => {
               ? { kind: "error", message: "结构追踪前请先修正错误" }
               : { kind: "success", message: "结构追踪已生成" },
         });
+        void get().runMomentDetection();
       } catch (error) {
         set({
           busy: false,
@@ -1088,6 +1102,21 @@ export const useGraphStore = create<GraphState>((set, get) => {
               error instanceof Error ? error.message : "结构追踪请求失败",
           },
         });
+      }
+    },
+
+    runMomentDetection: async () => {
+      const trace = get().trace;
+      if (!trace || trace.steps.length === 0) {
+        set({ moments: [] });
+        return;
+      }
+      try {
+        const result = await api.moments(trace);
+        if (get().trace !== trace) return;
+        set({ moments: result.moments ?? [] });
+      } catch {
+        if (get().trace === trace) set({ moments: [] });
       }
     },
 

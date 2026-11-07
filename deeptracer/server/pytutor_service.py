@@ -9,6 +9,8 @@ from functools import lru_cache
 from pathlib import Path
 
 from deeptracer import DEEPTRACER_DEV_ROOT
+from deeptracer.breakpoints.python import detect_python_moments
+from deeptracer.breakpoints.ranking import rank_moments
 from deeptracer.tracer_support import get_tracer_python_path
 
 
@@ -90,6 +92,11 @@ def execute_python_tutor_trace(
         raise RuntimeError("Python Tutor returned invalid JSON.") from exc
     if not isinstance(result, dict):
         raise RuntimeError("Python Tutor returned an invalid trace.")
+    moments = rank_moments(
+        detect_python_moments(result.get("trace") or [], user_script),
+        limit=5,
+    )
+    result["moments"] = [moment.model_dump() for moment in moments]
     return result
 
 
